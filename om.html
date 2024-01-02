@@ -1,0 +1,147 @@
+<head>
+  <link
+    rel="stylesheet"
+    href="https://mostlymaths.net/webfonts/reforma/reforma.css"
+  />
+  <link rel="stylesheet" href="https://mostlymaths.net/webfonts/monoid.css" />
+  <style>
+    #body {
+      line-height: 1.5;
+      font-size: 40px;
+      font-family: "Reforma1969";
+      font-weight: 100;
+      padding: 5%;
+      caret-color: green;
+      width: 100%;
+      height: 100%;
+    }
+    #body:focus {
+      outline: none;
+    }
+    #info {
+      position: absolute;
+      right: 2em;
+      top: 2em;
+      opacity: 1;
+      transition: opacity 1s ease-in-out;
+    }
+    .alive {
+      border-radius: 6px;
+      background: #eee;
+      padding-left: 0.1em;
+      padding-right: 0.1em;
+      font-family: "monoidregular";
+      font-size: 80%;
+    }
+    .fades {
+      opacity: 0 !important;
+    }
+  </style>
+</head>
+<body>
+  <div id="body" contenteditable></div>
+  <div id="info"></div>
+</body>
+<script>
+  const currentHash = window.location.hash.substring(1);
+  const decodedHash = decodeURIComponent(currentHash);
+  const body = document.querySelector("#body");
+  const info = document.querySelector("#info");
+  body.innerHTML = decodedHash;
+  function save() {
+    const encodedBodyContent = encodeURIComponent(body.innerHTML);
+    // Kill the "alive" buttons
+    window.location.hash = encodedBodyContent.replaceAll("%22alive%22", "");
+    info.innerHTML = "&#x1F4BE;";
+    info.classList.add("fades");
+  }
+  function reset() {
+    info.classList.remove("fades");
+    info.innerText = "";
+  }
+  function common(ev) {
+    reset();
+    return ev.button !== 0;
+  }
+  /*body.addEventListener("mousedown", (event) => {
+    info.classList.remove("fades");
+    info.innerText = "";
+  });*/
+  body.addEventListener("dblclick", (event) => {
+    const selectedText = window.getSelection();
+    const range = selectedText.getRangeAt(0);
+    if (
+      event.srcElement.classList.length > 0 &&
+      event.srcElement.classList.contains("alive")
+    ) {
+      return;
+    }
+    let node;
+    if (selectedText == "b" || selectedText == "bold") {
+      node = document.createElement("b");
+      node.onmousedown = (ev) => {
+        if (common(ev)) {
+          return;
+        }
+        document.execCommand("bold", false, null);
+      };
+    }
+    if (selectedText == "i" || selectedText == "italic") {
+      node = document.createElement("i");
+      node.onmousedown = (ev) => {
+        if (common(ev)) {
+          return;
+        }
+        document.execCommand("italic", false, null);
+      };
+    }
+    if (selectedText == "💾" || selectedText == "save") {
+      node = document.createElement("u");
+      console.log("save");
+      node.onmousedown = (ev) => {
+        if (common(ev)) {
+          return;
+        }
+        save();
+        ev.stopPropagation();
+      };
+    }
+    if (selectedText == "fontdown") {
+      node = document.createElement("u");
+      node.onmousedown = (ev) => {
+        if (common(ev)) {
+          return;
+        }
+        const fontSize = getComputedStyle(body).fontSize;
+        const newFontSize = parseFloat(fontSize) - 2;
+        body.style.fontSize = `${newFontSize}px`;
+      };
+    }
+    if (selectedText == "fontup") {
+      node = document.createElement("u");
+      node.onmousedown = (ev) => {
+        if (common(ev)) {
+          return;
+        }
+        const fontSize = getComputedStyle(body).fontSize;
+        const newFontSize = parseFloat(fontSize) + 2;
+        body.style.fontSize = `${newFontSize}px`;
+      };
+    }
+    if (node) {
+      node.innerText = selectedText;
+      node.classList.toggle("alive");
+      range.deleteContents();
+      range.insertNode(node);
+    }
+  });
+  body.addEventListener("keyup", (event) => {
+    if (event.ctrlKey && event.key === "s") {
+      save();
+    } else {
+      if (event.key !== "Control") {
+        reset();
+      }
+    }
+  });
+</script>
