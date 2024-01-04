@@ -5,18 +5,43 @@
   />
   <link rel="stylesheet" href="https://mostlymaths.net/webfonts/monoid.css" />
   <style>
-    #body {
-      line-height: 1.5;
+    body {
+      background: #002b36 !important;
       font-size: 40px;
-      font-family: "Reforma1969";
+    }
+    li {
+      padding-left: 1em;
+      list-style-type: "- ";
+    }
+    #body {
+      border-radius: 2px;
+      line-height: 1.5;
       font-weight: 100;
       padding: 5%;
       caret-color: green;
       width: 100%;
       height: 100%;
+      background: #fdf6e3;
+      color: #657b83;
     }
     #body:focus {
       outline: none;
+    }
+    .dark {
+      background: #002b36 !important;
+      color: #839496 !important;
+      caret-color: #93a1a1 !important;
+    }
+    hr {
+      border: 1px solid #657b83 !important;
+    }
+    .mono {
+      font-family: "monoidregular";
+      font-size: 95%;
+    }
+    .serif {
+      font-family: "Reforma1969";
+      font-size: 100%;
     }
     #info {
       position: absolute;
@@ -28,18 +53,21 @@
     .alive {
       border-radius: 6px;
       background: #eee;
-      padding-left: 0.1em;
-      padding-right: 0.1em;
+      padding-left: 0.3em;
+      padding-right: 0.3em;
       font-family: "monoidregular";
       font-size: 80%;
     }
     .fades {
       opacity: 0 !important;
     }
+    div.wrap {
+      display: inline-block;
+    }
   </style>
 </head>
 <body>
-  <div id="body" contenteditable></div>
+  <div id="body" class="dark" contenteditable></div>
   <div id="info"></div>
 </body>
 <script>
@@ -47,11 +75,16 @@
   const decodedHash = decodeURIComponent(currentHash);
   const body = document.querySelector("#body");
   const info = document.querySelector("#info");
+  const zwsr = () => document.createTextNode("\u200b")
   body.innerHTML = decodedHash;
   function save() {
-    const encodedBodyContent = encodeURIComponent(body.innerHTML);
-    // Kill the "alive" buttons
-    window.location.hash = encodedBodyContent.replaceAll("%22alive%22", "");
+    const regex =
+      /<div class="wrap"><[^\s]+ class="alive">([^<]+)<\/[^>]+><\/div>/g;
+    const streamlined = body.innerHTML.replaceAll(regex, "$1");
+    console.log(streamlined);
+    const encodedBodyContent = encodeURIComponent(streamlined);
+
+    window.location.hash = encodedBodyContent;
     info.innerHTML = "&#x1F4BE;";
     info.classList.add("fades");
   }
@@ -86,6 +119,15 @@
         document.execCommand("bold", false, null);
       };
     }
+    if (selectedText == "u" || selectedText == "underline") {
+      node = document.createElement("u");
+      node.onmousedown = (ev) => {
+        if (common(ev)) {
+          return;
+        }
+        document.execCommand("underline", false, null);
+      };
+    }
     if (selectedText == "i" || selectedText == "italic") {
       node = document.createElement("i");
       node.onmousedown = (ev) => {
@@ -112,9 +154,40 @@
         if (common(ev)) {
           return;
         }
-        const fontSize = getComputedStyle(body).fontSize;
+        const fontSize = getComputedStyle(document.body).fontSize;
         const newFontSize = parseFloat(fontSize) - 2;
-        body.style.fontSize = `${newFontSize}px`;
+        document.body.style.fontSize = `${newFontSize}px`;
+      };
+    }
+    if (selectedText == "dark") {
+      node = document.createElement("u");
+      node.onmousedown = (ev) => {
+        if (common(ev)) {
+          return;
+        }
+        body.classList.toggle("dark");
+      };
+    }
+    if (selectedText == "mono") {
+      node = document.createElement("u");
+      node.onmousedown = (ev) => {
+        if (common(ev)) {
+          return;
+        }
+        body.classList.remove("serif");
+        body.classList.remove("mono");
+        body.classList.add("mono");
+      };
+    }
+    if (selectedText == "serif") {
+      node = document.createElement("u");
+      node.onmousedown = (ev) => {
+        if (common(ev)) {
+          return;
+        }
+        body.classList.remove("mono");
+        body.classList.remove("serif");
+        body.classList.add("serif");
       };
     }
     if (selectedText == "fontup") {
@@ -123,24 +196,124 @@
         if (common(ev)) {
           return;
         }
-        const fontSize = getComputedStyle(body).fontSize;
+        const fontSize = getComputedStyle(document.body).fontSize;
         const newFontSize = parseFloat(fontSize) + 2;
-        body.style.fontSize = `${newFontSize}px`;
+        document.body.style.fontSize = `${newFontSize}px`;
+      };
+    }
+    if (selectedText == "new") {
+      node = document.createElement("u");
+      node.onmousedown = (ev) => {
+        if (common(ev)) {
+          return;
+        }
+        body.innerHTML = "";
       };
     }
     if (node) {
-      node.innerText = selectedText;
+      let div = document.createElement("div");
+      node.innerHTML = selectedText;
+      div.classList.toggle("wrap");
       node.classList.toggle("alive");
       range.deleteContents();
-      range.insertNode(node);
+      div.appendChild(node);
+      range.insertNode(div);
+      div.insertAdjacentHTML("beforebegin", "&thinsp;");
+      div.insertAdjacentHTML("afterend", "&thinsp;");
     }
   });
+  keyStack = ["Enter"]; // TODO Fishy on load though
+  listing = false; // TODO Horrible state machine
   body.addEventListener("keyup", (event) => {
+    const ek = event.key // TODO ref
+    console.log(event);
     if (event.ctrlKey && event.key === "s") {
       save();
     } else {
       if (event.key !== "Control") {
         reset();
+      }
+    }
+    if (!["-", "Enter", " "].includes(ek)){
+      keyStack = []
+    }
+    if (event.key === "-") {
+      if (keyStack[0] == "Enter") {
+        keyStack.push("-");
+        console.log(keyStack)
+        console.log(keyStack.slice(1).join(""))
+        if(keyStack.slice(1).join("") === "---"){
+          const zws = zwsr()
+          keyStack = ["Enter"] // We want possibly lists in this case
+          const selection = window.getSelection();
+          selection.extend(selection.anchorNode, 0);
+          range = selection.getRangeAt(0);
+          range.deleteContents();
+          hr = document.createElement("hr");
+          range.insertNode(zws)
+          range.insertNode(hr);
+          //range.collapse(false);
+          let newRange= document.createRange()
+          newRange.setStartAfter(zws);
+          //newRange.setEndBefore(li);
+          selection.removeAllRanges();
+          selection.addRange(newRange);
+          
+        }
+      }
+    }
+    if (event.key === "Enter") {
+      const selection = window.getSelection();
+      if(listing && keyStack.length == 0){
+        nbsp = document.createTextNode("\u00A0")
+        
+        const range = selection.getRangeAt(0)
+        listing.push(selection.anchorNode) // That should be the li
+        //range.insertNode(nbsp)
+      }
+      if(keyStack.length && keyStack[0] == "Enter" && listing){
+        const zws = zwsr()
+        console.log("deleting")
+        console.log(selection)
+        let range = document.createRange()
+        range.setStartBefore(listing[listing.length-1])//selection.anchorNode)
+        range.setEndAfter(selection.anchorNode)
+        range.deleteContents()
+         // Zero width space, TODO: remove on save
+        range.insertNode(zws)
+        selection.removeAllRanges();
+        range.setStartAfter(zws)//listing[0]);
+        selection.addRange(range);
+        listing = false // Hah!
+      }
+      if(!listing && selection.anchorNode.nodeName == "LI"){
+        listing = [selection.anchorNode]
+      }
+      keyStack = [];
+      keyStack.push("Enter");
+    }
+    if (event.key === " ") {
+      if (keyStack[0] == "Enter" && keyStack[1] == "-") {
+        const selection = window.getSelection();
+        //if (selection.anchorOffset == 2) {
+          const zws = zwsr()
+          selection.extend(selection.anchorNode, 0);
+          range = selection.getRangeAt(0);
+          range.deleteContents();
+          li = document.createElement("li");
+          li.appendChild(zws)
+          range.insertNode(li);
+          range.collapse(false);
+          let newRange= document.createRange()
+          newRange.setStartAfter(li);
+          //newRange.setEndBefore(li);
+          selection.removeAllRanges();
+          selection.addRange(newRange);
+          listing = [li]
+          keyStack = [];
+       //}
+      //} else {
+      //  console.log("nope");
       }
     }
   });
