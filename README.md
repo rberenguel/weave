@@ -44,3 +44,7 @@ Ideally this whole editor lives in a bookmarklet (so, in your browser, fully) an
 ### Name?
 
 _Om_ is short for _Omni_. Acme (corp and the editor too) do many things. I'd like Om to do many too, but it is short of Omni.
+
+### Why?
+
+Useful to take very transient and local notes, without needing a text editor of any kind.
