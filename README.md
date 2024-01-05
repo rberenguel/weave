@@ -9,7 +9,7 @@ Need to bold a piece of text? Just type **bold** or **b** and double-click on th
 It will become your bold button.
 
 ---
-Ideally this whole editor lives in a bookmark and a tab in your browser: nothing is stored remotely. Since I'm still adding some features this is still not available but can be tried directly [from Github Pages](https://mostlymaths.net/om/om.html). The inspiration for this was [here](https://mostlymaths.net/2020/10/202058-readings.html/#worlds-smallest-office-suitehttpszsergecompostsawfice).
+Ideally this whole editor lives in a bookmarklet (so, in your browser, fully) and a tab in your browser if you are writing: nothing is stored remotely. Since I'm still adding some features this is still not available but the editor can be used and tested [from Github Pages](https://mostlymaths.net/om/om.html). The inspiration for this was [here](https://mostlymaths.net/2020/10/202058-readings.html/#worlds-smallest-office-suitehttpszsergecompostsawfice).
 
 ### Rough areas
 - Creating lists by writing a dash and a space in a new line works, but can behave somewhat weirdly.
