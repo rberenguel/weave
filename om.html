@@ -1,4 +1,5 @@
 <head>
+  <meta charset="UTF-8" />
   <link
     rel="stylesheet"
     href="https://mostlymaths.net/webfonts/reforma/reforma.css"
@@ -64,25 +65,385 @@
     div.wrap {
       display: inline-block;
     }
+    .blur {
+      filter: blur(3px);
+    }
+    @media print {
+      body,
+      #body {
+        background-color: white !important;
+        color: black !important;
+        font-size: 15pt;
+      }
+
+      @page {
+        margin-left: 2cm;
+        margin-right: 2.5cm;
+        margin-top: 1cm;
+        margin-bottom: 1cm;
+      }
+    }
+
+    .highlight {
+      color: #c60;
+    }
+
+    #help {
+      font-size: 15pt;
+      line-height: 1.3;
+      position: absolute;
+      left: 0;
+      top: 10%;
+      margin-left: 15%;
+      margin-right: 15%;
+      padding: 1em;
+      border: 2px solid #c60;
+      border-radius: 5px;
+    }
+
+    p {
+      margin: 0;
+    }
+
+    a {
+      color: darkgreen;
+    }
   </style>
 </head>
 <body>
   <div id="body" class="dark" contenteditable></div>
   <div id="info"></div>
+  <div id="help" class="dark serif" style="display: none">
+    <p style="font-size: 130%">
+      This is <i class="highlight">Om</i>, a text "editor" inspired by
+      <a href="https://en.wikipedia.org/wiki/Acme_(text_editor)">Plan9's Acme</a
+      >.
+    </p>
+    <br />
+    <div style="padding-left: 1em">
+      <p>If you need a command, just write it.</p>
+      <p>
+        Need to <b>bold</b> a piece of text? Just type <b>bold</b> or
+        <b>b</b> and double-click on the word.
+      </p>
+      <p>It will become your bold button.</p>
+      <p>
+        Ideally this whole editor lives in a bookmark and a tab in your browser:
+        nothing is stored remotely. Since I'm still adding some features this is
+        still not available. The inspiration for this was
+        <a
+          href="https://mostlymaths.net/2020/10/202058-readings.html/#worlds-smallest-office-suitehttpszsergecompostsawfice"
+          >here</a
+        >.
+      </p>
+      <hr />
+      <p>Rough areas:</p>
+      <ul>
+        <li>
+          Creating lists by writing a dash and a space in a new line works, but
+          can behave somewhat weirdly.
+        </li>
+        <li>
+          Font size and width are stored in pixels, which can be a pain if the
+          window is resized (particularly width).
+        </li>
+        <li>
+          Print preview looks bad, but when printing it actually works. It also
+          prints the "buttons". I'm still unsure if I want to fix this.
+        </li>
+      </ul>
+      <p>Planned features?:</p>
+      <ul>
+        <li>
+          Creating headings by typing hashes at the beginning of the line.
+        </li>
+        <li>Checkboxes.</li>
+        <li>
+          Code cleanup, there is a lot of repetition (particularly in how I
+          handle and rewrite selection ranges).
+        </li>
+        <li>
+          Inject the fonts so there is no need to pull the CSSs for mono and
+          serif.
+        </li>
+      </ul>
+      <hr />
+      <p>The commands available are the following:</p>
+    </div>
+    <table id="commands" class="dark serif"></table>
+    <hr />
+    Click to dismiss
+  </div>
 </body>
 <script>
+  const mono = {
+    text: ["mono"],
+    action: (ev) => {
+      if (common(ev)) {
+        return;
+      }
+      body.classList.remove("serif");
+      body.classList.remove("mono");
+      body.classList.add("mono");
+      config.mono = true;
+    },
+    description: "Switch to a monospace font (Monoid) (stored in config)",
+    el: "u",
+  };
+
+  const help = {
+    text: ["help"],
+    action: (ev) => {
+      if (common(ev)) {
+        return;
+      }
+      helpDiv.style.display = "block";
+      body.classList.add("blur");
+    },
+    description: "Display help",
+    el: "u",
+  };
+
+  const serif = {
+    text: ["serif"],
+    action: (ev) => {
+      if (common(ev)) {
+        return;
+      }
+      body.classList.remove("mono");
+      body.classList.remove("serif");
+      body.classList.add("serif");
+      config.mono = false;
+    },
+    description: "Switch to a serif font (Reforma1969) (stored in config)",
+    el: "u",
+  };
+  const newDoc = {
+    text: ["new"],
+    action: (ev) => {
+      if (common(ev)) {
+        return;
+      }
+      body.innerHTML = "";
+    },
+    description: "Create a new document (erasing the current one)",
+    el: "u",
+  };
+  const fontup = {
+    text: ["fontup"],
+    action: (ev) => {
+      if (common(ev)) {
+        return;
+      }
+      const fontSize = getComputedStyle(document.body).fontSize;
+      const newFontSize = parseFloat(fontSize) + 2;
+      document.body.style.fontSize = `${newFontSize}px`;
+      config.fontsize = newFontSize;
+    },
+    description: "Increase the document font by 2 pixels (stored in config)",
+    el: "u",
+  };
+
+  const narrow = {
+    text: ["narrow"],
+    action: (ev) => {
+      if (common(ev)) {
+        return;
+      }
+      const width = getComputedStyle(body).width;
+      const newWidth = parseFloat(width) * 0.9;
+      body.style.width = `${newWidth}px`;
+      config.width = newWidth;
+    },
+    description: "Reduce the typing area width by 10% (stored in config)",
+    el: "u",
+  };
+
+  const widen = {
+    text: ["widen"],
+    action: (ev) => {
+      if (common(ev)) {
+        return;
+      }
+      const width = getComputedStyle(body).width;
+      const newWidth = parseFloat(width) * 1.1;
+      body.style.width = `${newWidth}px`;
+      config.width = newWidth;
+    },
+    description: "Increase the typing area width by 10% (stored in config)",
+    el: "u",
+  };
+
+  const print_ = {
+    text: ["print", "🖨️"],
+    action: (ev) => {
+      if (common(ev)) {
+        return;
+      }
+      window.print();
+    },
+    description: "Trigger the print dialog",
+    el: "u",
+  };
+
+  const save_ = {
+    text: ["save", "💾"],
+    action: (ev) => {
+      if (common(ev)) {
+        return;
+      }
+      save();
+      ev.stopPropagation();
+    },
+    description:
+      "Save the current changes and config in the URL, so it survives browser crashes",
+    el: "u",
+  };
+  // TODO: document.execCommand is deprecated. I could do the same by playing with selections and ranges.
+  const italic = {
+    text: ["italic", "i"],
+    action: (ev) => {
+      if (common(ev)) {
+        return;
+      }
+      document.execCommand("italic", false, null);
+    },
+    description: "Italicize the selected text",
+    el: "i",
+  };
+
+  const underline = {
+    text: ["underline", "u"],
+    action: (ev) => {
+      if (common(ev)) {
+        return;
+      }
+      document.execCommand("underline", false, null);
+    },
+    description: "Underline the selected text",
+    el: "u",
+  };
+
+  const bold = {
+    text: ["bold", "b"],
+    action: (ev) => {
+      if (common(ev)) {
+        return;
+      }
+      document.execCommand("bold", false, null);
+    },
+    description: "Bold the selected text",
+    el: "b",
+  };
+
+  const dark = {
+    text: ["dark"],
+    action: (ev) => {
+      if (common(ev)) {
+        return;
+      }
+      body.classList.toggle("dark");
+      console.log(config.dark);
+      config.dark = !config.dark;
+      console.log(config.dark);
+    },
+    description: "Toggle dark/light mode  (stored in config)",
+    el: "u",
+  };
+
+  const fontdown = {
+    text: ["fontdown"],
+    action: (ev) => {
+      if (common(ev)) {
+        return;
+      }
+      const fontSize = getComputedStyle(document.body).fontSize;
+      const newFontSize = parseFloat(fontSize) - 2;
+      document.body.style.fontSize = `${newFontSize}px`;
+      config.fontsize = newFontSize;
+    },
+    description: "Decrease the document font by 2 pixels (stored in config)",
+    el: "u",
+  };
+
+  const buttons = [
+    mono,
+    serif,
+    fontup,
+    fontdown,
+    newDoc,
+    print_,
+    dark,
+    save_,
+    bold,
+    italic,
+    underline,
+    help,
+    narrow,
+    widen,
+  ];
+  let helpTable = [`<tr><td>Command</td><td>Help</td></tr>`];
+  for (let button of buttons) {
+    const commandText = button.text.join("/");
+    const tr = `<tr><td>${commandText}</td><td>${button.description}</td></tr>`;
+    helpTable.push(tr);
+  }
+  document.getElementById("commands").innerHTML = helpTable.join("\n");
+
   const currentHash = window.location.hash.substring(1);
   const decodedHash = decodeURIComponent(currentHash);
   const body = document.querySelector("#body");
+  const helpDiv = document.querySelector("#help");
   const info = document.querySelector("#info");
-  const zwsr = () => document.createTextNode("\u200b")
-  body.innerHTML = decodedHash;
+  const zwsr = () => document.createTextNode("\u200b");
+  let config = {
+    dark: true,
+    mono: false,
+    fontsize: getComputedStyle(document.body).fontSize,
+  };
+  const split = decodedHash.split("\u2223");
+  console.log(split);
+  if (split.length > 1) {
+    config = JSON.parse(split[0]);
+    setConfig(config);
+    body.innerHTML = split[1];
+  } else {
+    body.innerHTML = decodedHash;
+  }
+
+  helpDiv.onmousedown = (ev) => {
+    if (ev.button !== 0) {
+      return;
+    }
+    helpDiv.style.display = "none";
+    body.classList.remove("blur");
+  };
+
+  function setConfig(config) {
+    if (config.dark) {
+      body.classList.add("dark");
+    } else {
+      body.classList.remove("dark");
+    }
+    if (config.mono) {
+      body.classList.add("mono");
+    } else {
+      body.classList.add("serif");
+    }
+    document.body.style.fontSize = `${config.fontsize}px`;
+    body.width = `${config.width}px`;
+  }
   function save() {
     const regex =
-      /<div class="wrap"><[^\s]+ class="alive">([^<]+)<\/[^>]+><\/div>/g;
-    const streamlined = body.innerHTML.replaceAll(regex, "$1");
+      /<div class="wrap"><[^\s]+ class="alive">\s*([^\s]+)\s*<\/[^>]+><\/div>/g;
+    const streamlined = body.innerHTML
+      .replaceAll(regex, "$1")
+      .replaceAll("\u2009", "");
     console.log(streamlined);
-    const encodedBodyContent = encodeURIComponent(streamlined);
+    const currentConfig = JSON.stringify(config);
+    const encodedBodyContent = encodeURIComponent(
+      `${currentConfig}\u2223${streamlined}`
+    );
 
     window.location.hash = encodedBodyContent;
     info.innerHTML = "&#x1F4BE;";
@@ -110,109 +471,19 @@
       return;
     }
     let node;
-    if (selectedText == "b" || selectedText == "bold") {
-      node = document.createElement("b");
-      node.onmousedown = (ev) => {
-        if (common(ev)) {
-          return;
-        }
-        document.execCommand("bold", false, null);
-      };
+    console.log(selectedText);
+
+    for (let button of buttons) {
+      // This can be sped up by reversing the indexing
+      if (button.text.includes(`${selectedText}`)) {
+        node = document.createElement(button.el);
+        node.onmousedown = button.action;
+      }
     }
-    if (selectedText == "u" || selectedText == "underline") {
-      node = document.createElement("u");
-      node.onmousedown = (ev) => {
-        if (common(ev)) {
-          return;
-        }
-        document.execCommand("underline", false, null);
-      };
-    }
-    if (selectedText == "i" || selectedText == "italic") {
-      node = document.createElement("i");
-      node.onmousedown = (ev) => {
-        if (common(ev)) {
-          return;
-        }
-        document.execCommand("italic", false, null);
-      };
-    }
-    if (selectedText == "💾" || selectedText == "save") {
-      node = document.createElement("u");
-      console.log("save");
-      node.onmousedown = (ev) => {
-        if (common(ev)) {
-          return;
-        }
-        save();
-        ev.stopPropagation();
-      };
-    }
-    if (selectedText == "fontdown") {
-      node = document.createElement("u");
-      node.onmousedown = (ev) => {
-        if (common(ev)) {
-          return;
-        }
-        const fontSize = getComputedStyle(document.body).fontSize;
-        const newFontSize = parseFloat(fontSize) - 2;
-        document.body.style.fontSize = `${newFontSize}px`;
-      };
-    }
-    if (selectedText == "dark") {
-      node = document.createElement("u");
-      node.onmousedown = (ev) => {
-        if (common(ev)) {
-          return;
-        }
-        body.classList.toggle("dark");
-      };
-    }
-    if (selectedText == "mono") {
-      node = document.createElement("u");
-      node.onmousedown = (ev) => {
-        if (common(ev)) {
-          return;
-        }
-        body.classList.remove("serif");
-        body.classList.remove("mono");
-        body.classList.add("mono");
-      };
-    }
-    if (selectedText == "serif") {
-      node = document.createElement("u");
-      node.onmousedown = (ev) => {
-        if (common(ev)) {
-          return;
-        }
-        body.classList.remove("mono");
-        body.classList.remove("serif");
-        body.classList.add("serif");
-      };
-    }
-    if (selectedText == "fontup") {
-      node = document.createElement("u");
-      node.onmousedown = (ev) => {
-        if (common(ev)) {
-          return;
-        }
-        const fontSize = getComputedStyle(document.body).fontSize;
-        const newFontSize = parseFloat(fontSize) + 2;
-        document.body.style.fontSize = `${newFontSize}px`;
-      };
-    }
-    if (selectedText == "new") {
-      node = document.createElement("u");
-      node.onmousedown = (ev) => {
-        if (common(ev)) {
-          return;
-        }
-        body.innerHTML = "";
-      };
-    }
+
     if (node) {
       let div = document.createElement("div");
-      node.innerHTML = selectedText;
+      node.innerHTML = `${selectedText}`.trim();
       div.classList.toggle("wrap");
       node.classList.toggle("alive");
       range.deleteContents();
@@ -225,7 +496,7 @@
   keyStack = ["Enter"]; // TODO Fishy on load though
   listing = false; // TODO Horrible state machine
   body.addEventListener("keyup", (event) => {
-    const ek = event.key // TODO ref
+    const ek = event.key; // TODO ref
     console.log(event);
     if (event.ctrlKey && event.key === "s") {
       save();
@@ -234,60 +505,58 @@
         reset();
       }
     }
-    if (!["-", "Enter", " "].includes(ek)){
-      keyStack = []
+    if (!["-", "Enter", " "].includes(ek)) {
+      keyStack = [];
     }
     if (event.key === "-") {
       if (keyStack[0] == "Enter") {
         keyStack.push("-");
-        console.log(keyStack)
-        console.log(keyStack.slice(1).join(""))
-        if(keyStack.slice(1).join("") === "---"){
-          const zws = zwsr()
-          keyStack = ["Enter"] // We want possibly lists in this case
+        console.log(keyStack);
+        console.log(keyStack.slice(1).join(""));
+        if (keyStack.slice(1).join("") === "---") {
+          const zws = zwsr();
+          keyStack = ["Enter"]; // We want possibly lists in this case
           const selection = window.getSelection();
           selection.extend(selection.anchorNode, 0);
           range = selection.getRangeAt(0);
           range.deleteContents();
           hr = document.createElement("hr");
-          range.insertNode(zws)
+          range.insertNode(zws);
           range.insertNode(hr);
           //range.collapse(false);
-          let newRange= document.createRange()
+          let newRange = document.createRange();
           newRange.setStartAfter(zws);
           //newRange.setEndBefore(li);
           selection.removeAllRanges();
           selection.addRange(newRange);
-          
         }
       }
     }
     if (event.key === "Enter") {
       const selection = window.getSelection();
-      if(listing && keyStack.length == 0){
-        nbsp = document.createTextNode("\u00A0")
-        
-        const range = selection.getRangeAt(0)
-        listing.push(selection.anchorNode) // That should be the li
-        //range.insertNode(nbsp)
+      if (listing && keyStack.length == 0) {
+        nbsp = document.createTextNode("\u00A0");
+
+        const range = selection.getRangeAt(0);
+        listing.push(selection.anchorNode); // That should be the li
       }
-      if(keyStack.length && keyStack[0] == "Enter" && listing){
-        const zws = zwsr()
-        console.log("deleting")
-        console.log(selection)
-        let range = document.createRange()
-        range.setStartBefore(listing[listing.length-1])//selection.anchorNode)
-        range.setEndAfter(selection.anchorNode)
-        range.deleteContents()
-         // Zero width space, TODO: remove on save
-        range.insertNode(zws)
+      if (keyStack.length && keyStack[0] == "Enter" && listing) {
+        const zws = zwsr();
+        console.log("deleting");
+        console.log(selection);
+        let range = document.createRange();
+        range.setStartBefore(listing[listing.length - 1]); //selection.anchorNode)
+        range.setEndAfter(selection.anchorNode);
+        range.deleteContents();
+        // Zero width space, TODO: remove on save
+        range.insertNode(zws);
         selection.removeAllRanges();
-        range.setStartAfter(zws)//listing[0]);
+        range.setStartAfter(zws); //listing[0]);
         selection.addRange(range);
-        listing = false // Hah!
+        listing = false; // Hah!
       }
-      if(!listing && selection.anchorNode.nodeName == "LI"){
-        listing = [selection.anchorNode]
+      if (!listing && selection.anchorNode.nodeName == "LI") {
+        listing = [selection.anchorNode];
       }
       keyStack = [];
       keyStack.push("Enter");
@@ -296,24 +565,24 @@
       if (keyStack[0] == "Enter" && keyStack[1] == "-") {
         const selection = window.getSelection();
         //if (selection.anchorOffset == 2) {
-          const zws = zwsr()
-          selection.extend(selection.anchorNode, 0);
-          range = selection.getRangeAt(0);
-          range.deleteContents();
-          li = document.createElement("li");
-          li.appendChild(zws)
-          range.insertNode(li);
-          range.collapse(false);
-          let newRange= document.createRange()
-          newRange.setStartAfter(li);
-          //newRange.setEndBefore(li);
-          selection.removeAllRanges();
-          selection.addRange(newRange);
-          listing = [li]
-          keyStack = [];
-       //}
-      //} else {
-      //  console.log("nope");
+        const zws = zwsr();
+        selection.extend(selection.anchorNode, 0);
+        range = selection.getRangeAt(0);
+        range.deleteContents();
+        li = document.createElement("li");
+        li.appendChild(zws);
+        range.insertNode(li);
+        range.collapse(false);
+        let newRange = document.createRange();
+        newRange.setStartAfter(li);
+        //newRange.setEndBefore(li);
+        selection.removeAllRanges();
+        selection.addRange(newRange);
+        listing = [li];
+        keyStack = [];
+        //}
+        //} else {
+        //  console.log("nope");
       }
     }
   });
