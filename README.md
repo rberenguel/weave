@@ -11,6 +11,9 @@ It will become your bold button.
 ---
 Ideally this whole editor lives in a bookmarklet (so, in your browser, fully) and a tab in your browser if you are writing: nothing is stored remotely. The link is below (but has a bug when saving due to a problem with… regexes, of course), you can better use it directly [from Github Pages](https://mostlymaths.net/om/om.html). The inspiration for this was [here](https://mostlymaths.net/2020/10/202058-readings.html/#worlds-smallest-office-suitehttpszsergecompostsawfice).
 
+NOTE:
+This won't save in Chrome due to how I save the content (anchors in the URL). It works in Safari and other browsers though, I'm thinking how to get it to save in Chrome with some reasonable workaround.
+
 I used <a href="https://dopiaza.org/tools/datauri/index.php">this</a> to create the bookmarklet, thanks to the author.
 
 ---
