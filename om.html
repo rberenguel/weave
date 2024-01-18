@@ -23,8 +23,8 @@
       font-weight: 100;
       padding: 5%;
       caret-color: green;
-      width: 100%;
-      height: 100%;
+      width: auto;
+      height: auto;
       background: #fdf6e3;
       color: #657b83;
     }
@@ -71,6 +71,22 @@
     .blur {
       filter: blur(3px);
     }
+    #body>pre{
+      font-family: "monoidregular";
+      padding-left: 2em;
+      font-size: 60%;
+      line-height: 1.1em;
+      background-color: #00000022;
+      padding-right: 0.4em;
+      padding-top: 0.4em;
+      padding-bottom: 0.4em;
+      border: 1px solid #c60;
+      border-radius: 5px;
+      white-space: pre-wrap;
+      text-indent: -1em each-line;
+      font-weight: 100;
+    }
+
     @media print {
       body,
       #body {
@@ -143,6 +159,10 @@
       <p>Rough areas:</p>
       <ul>
         <li>
+          When creating a code block with ```, you can't start it by pressing enter, it 
+          needs to be space so far. Also, to write a new line inside the block you need to press shift+enter, enter alone will create a new block. That is not nice.
+        </li>
+        <li>
           Creating lists by writing a dash and a space in a new line works, but
           can behave somewhat weirdly.
         </li>
@@ -157,17 +177,10 @@
       </ul>
       <p>Planned features?:</p>
       <ul>
-        <li>
-          Creating headings by typing hashes at the beginning of the line.
-        </li>
         <li>Checkboxes.</li>
         <li>
           Code cleanup, there is a lot of repetition (particularly in how I
           handle and rewrite selection ranges).
-        </li>
-        <li>
-          Inject the fonts so there is no need to pull the CSSs for mono and
-          serif.
         </li>
       </ul>
       <hr />
@@ -514,7 +527,7 @@
         reset();
       }
     }
-    if (!["-", "Enter", " ", "#", "Shift"].includes(ek)) {
+    if (!["-", "Enter", " ", "#", "Shift", "`"].includes(ek)) {
       keyStack = [];
     }
 
@@ -553,6 +566,12 @@
         keyStack.push("#");
       }
     }
+    if(event.key==="`"){
+      // State machine for code blocks
+      if(keyStack[0]=="Enter"){
+        keyStack.push("`")
+      }
+    }
     if (event.key === "Enter") {
       const selection = window.getSelection();
       if (listing && keyStack.length == 0) {
@@ -586,7 +605,6 @@
       if (keyStack[0] == "Enter" && keyStack.slice(1)[0] == "#") {
         const hashes = keyStack.slice(1).filter((c) => c == "#").length;
         const headingLevel = Math.min(hashes, 6);
-        // Let's do one hash first
         const selection = window.getSelection();
         const zws = zwsr();
         let range = deleteCurrentWord(selection);
@@ -596,6 +614,26 @@
         range.collapse(false);
         let newRange = document.createRange();
         newRange.setStartAfter(heading);
+        selection.removeAllRanges();
+        selection.addRange(newRange);
+        keyStack = [];
+      }
+      if(keyStack.length==4 && keyStack.slice(1).join("")==="```"){
+        console.log("Code block")
+        // This is almost verbatim what I have for li and for h*
+        const selection = window.getSelection();
+        const zws = zwsr();
+        let range = deleteCurrentWord(selection);
+        let pre = document.createElement("pre");
+        let div = document.createElement("div")
+        div.appendChild(zwsr())
+        pre.appendChild(zws);
+        range.insertNode(div)
+        //range.insertNode(pre);
+        body.insertBefore(pre, div)
+        range.collapse(false);
+        let newRange = document.createRange();
+        newRange.setStartBefore(pre);
         selection.removeAllRanges();
         selection.addRange(newRange);
         keyStack = [];
