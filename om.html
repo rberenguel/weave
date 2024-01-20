@@ -17,16 +17,23 @@
       padding-left: 1em;
       list-style-type: "- ";
     }
-    #body {
+    .body {
       border-radius: 2px;
       line-height: 1.5;
       font-weight: 100;
-      padding: 5%;
+      padding: 1%;
       caret-color: green;
       width: auto;
-      height: auto;
+      height: 80%;
+      overflow: auto;
       background: #fdf6e3;
       color: #657b83;
+      resize: both;
+      border: 1px solid #c60;
+      border-radius: 5px;
+      float: inline-start;
+      min-width: 20%;
+      min-height: 7%;
     }
     .dark .keyword {
       color: #859900;
@@ -41,7 +48,7 @@
     .dark .brace {
       color: #d33682
     }
-    #body:focus {
+    .body:focus {
       outline: none;
     }
     .dark {
@@ -84,7 +91,7 @@
     .blur {
       filter: blur(3px);
     }
-    #body>pre{
+    .body>pre{
       font-family: "monoidregular";
       padding-left: 2em;
       font-size: 60%;
@@ -102,7 +109,7 @@
 
     @media print {
       body,
-      #body {
+      .body {
         background-color: white !important;
         color: black !important;
         font-size: 15pt;
@@ -143,7 +150,8 @@
   </style>
 </head>
 <body>
-  <div id="body" class="dark" contenteditable></div>
+  <div class="body" class="dark" contenteditable id="b0"></div>
+  
   <div id="info"></div>
   <div id="help" class="dark serif" style="display: none">
     <p style="font-size: 130%">
@@ -331,9 +339,12 @@ const keywords = pythonKeywords.concat(javascriptKeywords);
       if (common(ev)) {
         return;
       }
-      body.classList.remove("serif");
+      for(let body of bodies){
+        body.classList.remove("serif");
       body.classList.remove("mono");
       body.classList.add("mono");
+      }
+      
       config.mono = true;
     },
     description: "Switch to a monospace font (Monoid) (stored in config)",
@@ -393,7 +404,7 @@ const keywords = pythonKeywords.concat(javascriptKeywords);
     el: "u",
   };
 
-  const narrow = {
+  /*const narrow = {
     text: ["narrow"],
     action: (ev) => {
       if (common(ev)) {
@@ -406,9 +417,9 @@ const keywords = pythonKeywords.concat(javascriptKeywords);
     },
     description: "Reduce the typing area width by 10% (stored in config)",
     el: "u",
-  };
+  };*/
 
-  const widen = {
+  /*const widen = {
     text: ["widen"],
     action: (ev) => {
       if (common(ev)) {
@@ -421,7 +432,7 @@ const keywords = pythonKeywords.concat(javascriptKeywords);
     },
     description: "Increase the typing area width by 10% (stored in config)",
     el: "u",
-  };
+  };*/
 
   const print_ = {
     text: ["print", "🖨️"],
@@ -459,6 +470,27 @@ const keywords = pythonKeywords.concat(javascriptKeywords);
     },
     description: "Italicize the selected text",
     el: "i",
+  };
+
+  const split = {
+    text: ["split"],
+    action: (ev) => {
+      if (common(ev)) {
+        return;
+      }
+      // This is now repeated!
+      n = bodies.length
+      const div = document.createElement("div")
+      div.classList.add("body")
+      div.classList.add("dark")
+      div.classList.add("serif")
+      div.contentEditable = true
+      div.id = `b${n}`
+      document.body.appendChild(div)
+      bodies = document.getElementsByClassName("body")
+    },
+    description: "Add a new editing buffer",
+    el: "u",
   };
 
   const underline = {
@@ -526,8 +558,9 @@ const keywords = pythonKeywords.concat(javascriptKeywords);
     italic,
     underline,
     help,
-    narrow,
-    widen,
+    split
+    //narrow,
+    //widen,
   ];
   let helpTable = [`<tr><td>Command</td><td>Help</td></tr>`];
   for (let button of buttons) {
@@ -539,7 +572,7 @@ const keywords = pythonKeywords.concat(javascriptKeywords);
 
   const currentHash = window.location.hash.substring(1);
   const decodedHash = decodeURIComponent(currentHash);
-  const body = document.querySelector("#body");
+  let bodies = document.getElementsByClassName("body")
   const helpDiv = document.querySelector("#help");
   const info = document.querySelector("#info");
   const zwsr = () => document.createTextNode("\u200b");
@@ -548,15 +581,37 @@ const keywords = pythonKeywords.concat(javascriptKeywords);
     mono: false,
     fontsize: getComputedStyle(document.body).fontSize,
   };
-  const split = decodedHash.split("\u2223");
-  if (split.length > 1) {
-    config = JSON.parse(split[0]);
+  const splitHash = decodedHash.split("\u2223");
+  if (splitHash.length > 1) {
+    let bodiesData = JSON.parse(splitHash[1])
+    for(let n=1; n<bodiesData.length; n++){
+      const div = document.createElement("div")
+      div.classList.add("body")
+      div.classList.add("dark")
+      div.classList.add("serif")
+      div.contentEditable = true
+      div.id = `b${n}`  
+      document.body.appendChild(div)
+    }
+    config = JSON.parse(splitHash[0]);
     setConfig(config);
-    body.innerHTML = split[1];
+    
+    for(let id in bodiesData){
+      console.log(id)
+      let bodyData = bodiesData[id]
+      console.log(bodyData)
+      let body = document.querySelector(`#b${id}`);
+      body.innerHTML = bodyData["data"];
+      console.log(bodyData["data"])
+      body.style.width = bodyData["width"]
+      body.style.height = bodyData["height"]
+    }
   } else {
     setConfig({});
-    body.innerHTML = decodedHash;
+    for(let body of bodies){body.innerHTML = decodedHash;}
   }
+  // Refresh the list of bodies
+  bodies = document.getElementsByClassName("body")
 
   helpDiv.onmousedown = (ev) => {
     if (ev.button !== 0) {
@@ -569,32 +624,44 @@ const keywords = pythonKeywords.concat(javascriptKeywords);
   function setConfig(config) {
     console.log("Setting config to ", config);
     if (config.dark === undefined || config.dark) {
-      console.log(config.dark);
-      body.classList.add("dark");
+      console.log(bodies);
+      for(let body of bodies){
+        console.log(body)
+        body.classList.add("dark");
+      }
     } else {
-      body.classList.remove("dark");
+      for(let body of bodies){body.classList.remove("dark");}
     }
     if (config.mono) {
-      body.classList.add("mono");
+      for(let body of bodies){body.classList.add("mono");}
     } else {
-      body.classList.add("serif");
+      for(let body of bodies){body.classList.add("serif");}
     }
     document.body.style.fontSize = `${config.fontsize}px`;
-    body.style.width = `${config.width}px`;
+    //body.style.width = `${config.width}px`;
   }
   function save() {
     // Uh, the regex has issues with the hat in the bookmarklet…
+    let savedata = []
     const regex =
       /<div class="wrap"><[^\s]+ class="alive">\s*([^\s]+)\s*<\/[^>]+><\/div>/g;
-    const streamlined = body.innerHTML
+        for(let body of bodies){
+          const streamlined = body.innerHTML
       .replaceAll(regex, "$1")
       .replaceAll("\u2009", "");
+      let b = {}
+      b["data"] = streamlined
+      b["width"] = body.style.width
+      b["height"] = body.style.height
+      savedata.push(b)
+        }
+    
     const currentConfig = JSON.stringify(config);
-    const encodedBodyContent = encodeURIComponent(
-      `${currentConfig}\u2223${streamlined}`
+    const encodedBodiesContent = encodeURIComponent(
+      `${currentConfig}\u2223${JSON.stringify(savedata)}`
     );
 
-    window.location.hash = encodedBodyContent;
+    window.location.hash = encodedBodiesContent;
     info.innerHTML = "&#x1F4BE;";
     info.classList.add("fades");
   }
@@ -606,7 +673,7 @@ const keywords = pythonKeywords.concat(javascriptKeywords);
     reset();
     return ev.button !== 0;
   }
-
+for(let body of bodies){
   body.addEventListener("dblclick", (event) => {
     const selectedText = window.getSelection();
     const range = selectedText.getRangeAt(0);
@@ -637,9 +704,10 @@ const keywords = pythonKeywords.concat(javascriptKeywords);
       div.insertAdjacentHTML("beforebegin", "&thinsp;");
       div.insertAdjacentHTML("afterend", "&thinsp;");
     }
-  });
+  });}
   keyStack = ["Enter"]; // TODO Fishy on load though
   listing = false; // TODO Horrible state machine
+  for(let body of bodies){
   body.addEventListener("keyup", (event) => {
     const ek = event.key; // TODO ref
     if (event.ctrlKey && event.key === "s") {
@@ -781,7 +849,7 @@ const keywords = pythonKeywords.concat(javascriptKeywords);
         keyStack = [];
       }
     }
-  });
+  });}
 </script>
 <style>
   @font-face {
