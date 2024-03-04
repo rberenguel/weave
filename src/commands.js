@@ -196,6 +196,48 @@ const bold = {
   el: "b",
 };
 
+const eval_ = {
+  text: ["eval", "="],
+  action: (ev) => {
+    if (common(ev)) {
+      return;
+    }
+    const selection = window.getSelection();
+    const selectionText = selection+"";
+    console.log("Evaluating "+selectionText)
+    const evaluation = eval?.(selectionText);
+    const matchesAssignment = selectionText.match(/(\w*)\s*=/);
+    let assignment
+    if(matchesAssignment){
+      const variable = matchesAssignment[1];
+      console.log("Has an equal, variable is named ", variable);
+      assignment = document.createElement("span")
+      assignment.classList.add("assignment");
+      const assignmentText = document.createTextNode(`${variable} = `);
+      assignment.appendChild(assignmentText);
+    }
+    const code = document.createElement("code");
+    const text = document.createTextNode(evaluation);
+    let range = selection.getRangeAt(0);
+    const parentNode = range.startContainer.parentNode
+    const tag = parentNode.tagName
+    range.deleteContents();
+    if(tag == "CODE"){
+      parentNode.appendChild(text);
+    } else {
+      if(assignment){
+        code.appendChild(assignment);
+      }
+      code.appendChild(text);
+      range.insertNode(code);
+      code.insertAdjacentHTML("beforebegin", "\u200b");
+      code.insertAdjacentHTML("afterend", "\u200b");
+    }
+  },
+  description: "Evaluate (JavaScript) the selected text",
+  el: "u",
+};
+
 const dark = {
   text: ["dark"],
   action: (ev) => {
@@ -245,6 +287,7 @@ const buttons = [
   underline,
   help,
   split,
+  eval_,
   //narrow,
   //widen,
 ];
