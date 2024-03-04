@@ -1,0 +1,181 @@
+body {
+  background: #002b36 !important;
+  font-size: 40px;
+}
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  margin: 0.3em;
+}
+li {
+  padding-left: 1em;
+  list-style-type: "- ";
+}
+.body {
+  border-radius: 2px;
+  line-height: 1.5;
+  font-weight: 100;
+  padding: 1%;
+  caret-color: green;
+  width: 80%;
+  height: 80%;
+  overflow: auto;
+  background: #fdf6e3;
+  color: #657b83;
+  resize: both;
+  border: 1px solid #c60;
+  border-radius: 5px;
+  float: inline-start;
+  min-width: 20%;
+  min-height: 7%;
+  margin: 0.1em;
+}
+
+.body::-webkit-scrollbar {
+  width: 0.15em;
+}
+
+.body::-webkit-scrollbar:inactive {
+  width: 0.15em;
+}
+
+.body::-webkit-scrollbar-thumb:vertical {
+  background-color: #c60;
+  border-top-right-radius: 3px;
+  background-clip: padding-box;
+}
+
+.body::-webkit-scrollbar-thumb:horizontal {
+  background-color: #c60;
+  border-bottom-left-radius: 3px;
+  background-clip: padding-box;
+}
+
+// For some reason resizer does not get properly styled, ignores width
+.body::-webkit-resizer {
+  background-color: transparent;
+  border-bottom-right-radius: 3px;
+}
+.body::-webkit-scrollbar-corner {
+  background-color: #c60;
+  border-bottom-right-radius: 3px;
+  width: 0.15em;
+}
+.body::-webkit-scrollbar-track {
+  background-color: transparent;
+}
+.dark .keyword {
+  color: #859900;
+}
+
+.string {
+  color: #2aa198;
+}
+.light .brace {
+  color: #268bd2;
+}
+.dark .brace {
+  color: #d33682;
+}
+.body:focus {
+  outline: none;
+}
+.dark {
+  background: #002b36 !important;
+  color: #839496 !important;
+  caret-color: #93a1a1 !important;
+}
+hr {
+  border: 1px solid #657b83 !important;
+}
+.mono {
+  font-family: "monoidregular";
+  font-size: 95%;
+}
+.serif {
+  font-family: "Reforma1969";
+  font-size: 100%;
+}
+#info {
+  position: absolute;
+  right: 2em;
+  top: 2em;
+  opacity: 1;
+  transition: opacity 1s ease-in-out;
+}
+.alive {
+  border-radius: 6px;
+  background: #eee;
+  padding-left: 0.3em;
+  padding-right: 0.3em;
+  font-family: "monoidregular";
+  font-size: 80%;
+}
+.fades {
+  opacity: 0 !important;
+}
+div.wrap {
+  display: inline-block;
+}
+.blur {
+  filter: blur(3px);
+}
+.body > pre {
+  font-family: "monoidregular";
+  padding-left: 2em;
+  font-size: 60%;
+  line-height: 1.1em;
+  background-color: #00000022;
+  padding-right: 0.4em;
+  padding-top: 0.4em;
+  padding-bottom: 0.4em;
+  border: 1px solid #c60;
+  border-radius: 5px;
+  white-space: pre-wrap;
+  text-indent: -1em each-line;
+  font-weight: 100;
+}
+
+@media print {
+  body,
+  .body {
+    background-color: white !important;
+    color: black !important;
+    font-size: 15pt;
+  }
+
+  @page {
+    margin-left: 2cm;
+    margin-right: 2.5cm;
+    margin-top: 1cm;
+    margin-bottom: 1cm;
+  }
+}
+
+.highlight {
+  color: #c60;
+}
+
+#help {
+  font-size: 15pt;
+  line-height: 1.3;
+  position: absolute;
+  left: 0;
+  top: 10%;
+  margin-left: 15%;
+  margin-right: 15%;
+  padding: 1em;
+  border: 2px solid #c60;
+  border-radius: 5px;
+}
+
+p {
+  margin: 0;
+}
+
+a {
+  color: darkgreen;
+}

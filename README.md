@@ -2,7 +2,7 @@
 
 This is **Om**, a text "editor" inspired by [Plan9's Acme](https://en.wikipedia.org/wiki/Acme_(text_editor)).
 
-<img src="light.png" width=300> <img src="dark.png" width=300>|
+<img src="media/light.png" width=300> <img src="media/dark.png" width=300>|
 
 If you need a command, just write it.
 Need to bold a piece of text? Just type **bold** or **b** and double-click on the word.
