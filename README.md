@@ -2,13 +2,13 @@
 
 This is **Om**, a text "editor" inspired by [Plan9's Acme](https://en.wikipedia.org/wiki/Acme_(text_editor)).
 
+https://github.com/rberenguel/om/assets/2410938/0a03732d-6dcf-4bf4-9311-70d57d272274
+
 <img src="media/light.png" width=300> <img src="media/dark.png" width=300>|
 
 If you need a command, just write it.
 Need to bold a piece of text? Just type **bold** or **b** and double-click on the word.
 It will become your bold button.
-
-https://github.com/rberenguel/om/assets/2410938/0a03732d-6dcf-4bf4-9311-70d57d272274
 
 ---
 
