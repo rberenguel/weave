@@ -197,7 +197,7 @@ const bold = {
 };
 
 const eval_ = {
-  text: ["eval", "="],
+  text: ["eval", "=", "🧮"],
   action: (ev) => {
     if (common(ev)) {
       return;
@@ -213,7 +213,7 @@ const eval_ = {
       console.log("Has an equal, variable is named ", variable);
       assignment = document.createElement("span")
       assignment.classList.add("assignment");
-      const assignmentText = document.createTextNode(`${variable} = `);
+      const assignmentText = document.createTextNode(`${variable}`);
       assignment.appendChild(assignmentText);
     }
     const code = document.createElement("code");
@@ -230,6 +230,9 @@ const eval_ = {
       }
       code.appendChild(text);
       range.insertNode(code);
+      if(assignment){
+        assignment.insertAdjacentHTML("afterend", " = ");
+      }
       code.insertAdjacentHTML("beforebegin", "\u200b");
       code.insertAdjacentHTML("afterend", "\u200b");
     }
