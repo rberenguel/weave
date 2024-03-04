@@ -8,6 +8,8 @@ If you need a command, just write it.
 Need to bold a piece of text? Just type **bold** or **b** and double-click on the word.
 It will become your bold button.
 
+https://github.com/rberenguel/om/assets/2410938/0a03732d-6dcf-4bf4-9311-70d57d272274
+
 ---
 
 Ideally the whole editor would live in a bookmarklet, as a `data:text/html` URI. But that is not cross-browser compatible for saving (Chrome and Edge don't allow it), so the best is that you use it from GitHub pages… or **just `git clone` and open the HTML locally as a file**. That seems to work fine in Chrome and Safari, just drag the HTML file to them. Data is stored as URL anchors, so technically it could be read from some log in GitHub. The inspiration for this was [here](https://mostlymaths.net/2020/10/202058-readings.html/#worlds-smallest-office-suitehttpszsergecompostsawfice).
