@@ -32,8 +32,9 @@ li {
   border: 1px solid #c60;
   border-radius: 5px;
   float: inline-start;
-  min-width: 20%;
-  min-height: 7%;
+  min-width: fit-content;
+  min-height: fit-content;
+  max-height: 95%;
   margin: 0.1em;
 }
 
@@ -356,6 +357,7 @@ const javascriptKeywords = [
   "yield",
 ];
 const keywords = pythonKeywords.concat(javascriptKeywords);
+
 const hilite = () => {
   const pres = document.getElementsByTagName("pre");
   for (let pre of pres) {
@@ -373,6 +375,19 @@ const hilite = () => {
     pre.innerHTML = text;
   }
 };
+
+// Reset stuff
+function reset() {
+  info.classList.remove("fades");
+  info.innerText = "";
+}
+
+// Hook I use everywhere
+function common(ev) {
+  reset();
+  return ev.button !== 0;
+}
+
 const mono = {
   text: ["mono"],
   action: (ev) => {
@@ -435,44 +450,45 @@ const fontup = {
     if (common(ev)) {
       return;
     }
-    const fontSize = getComputedStyle(document.body).fontSize;
+    const parentBodyId = ev.srcElement.parentElement.parentElement.id;
+    const parentBody = document.getElementById(parentBodyId);
+    const fontSize = getComputedStyle(parentBody).fontSize;
     const newFontSize = parseFloat(fontSize) + 2;
-    document.body.style.fontSize = `${newFontSize}px`;
-    config.fontsize = newFontSize;
+    parentBody.style.fontSize = `${newFontSize}px`;
   },
   description: "Increase the document font by 2 pixels (stored in config)",
   el: "u",
 };
 
 /*const narrow = {
-    text: ["narrow"],
-    action: (ev) => {
-      if (common(ev)) {
-        return;
-      }
-      const width = getComputedStyle(body).width;
-      const newWidth = parseFloat(width) * 0.9;
-      body.style.width = `${newWidth}px`;
-      config.width = newWidth;
-    },
-    description: "Reduce the typing area width by 10% (stored in config)",
-    el: "u",
-  };*/
+      text: ["narrow"],
+      action: (ev) => {
+        if (common(ev)) {
+          return;
+        }
+        const width = getComputedStyle(body).width;
+        const newWidth = parseFloat(width) * 0.9;
+        body.style.width = `${newWidth}px`;
+        config.width = newWidth;
+      },
+      description: "Reduce the typing area width by 10% (stored in config)",
+      el: "u",
+    };*/
 
 /*const widen = {
-    text: ["widen"],
-    action: (ev) => {
-      if (common(ev)) {
-        return;
-      }
-      const width = getComputedStyle(body).width;
-      const newWidth = parseFloat(width) * 1.1;
-      body.style.width = `${newWidth}px`;
-      config.width = newWidth;
-    },
-    description: "Increase the typing area width by 10% (stored in config)",
-    el: "u",
-  };*/
+      text: ["widen"],
+      action: (ev) => {
+        if (common(ev)) {
+          return;
+        }
+        const width = getComputedStyle(body).width;
+        const newWidth = parseFloat(width) * 1.1;
+        body.style.width = `${newWidth}px`;
+        config.width = newWidth;
+      },
+      description: "Increase the typing area width by 10% (stored in config)",
+      el: "u",
+    };*/
 
 const print_ = {
   text: ["print", "🖨️"],
@@ -580,10 +596,14 @@ const fontdown = {
     if (common(ev)) {
       return;
     }
-    const fontSize = getComputedStyle(document.body).fontSize;
+    // TODO(me): This is hacky, if I wrap a button in italics for example 
+    // this stops being valid as a parent id. It is probably better if
+    // I can hook the action somehow to the parent directly?
+    const parentBodyId = ev.srcElement.parentElement.parentElement.id;
+    const parentBody = document.getElementById(parentBodyId);
+    const fontSize = getComputedStyle(parentBody).fontSize;
     const newFontSize = parseFloat(fontSize) - 2;
-    document.body.style.fontSize = `${newFontSize}px`;
-    config.fontsize = newFontSize;
+    parentBody.style.fontSize = `${newFontSize}px`;
   },
   description: "Decrease the document font by 2 pixels (stored in config)",
   el: "u",
@@ -614,58 +634,61 @@ for (let button of buttons) {
 }
 document.getElementById("commands").innerHTML = helpTable.join("\n");
 
-const currentHash = window.location.hash.substring(1);
-const decodedHash = decodeURIComponent(currentHash);
+
+// Globals that are used everywhere
+
+// HTML elements of interest
 let bodies = document.getElementsByClassName("body");
 const helpDiv = document.querySelector("#help");
 const info = document.querySelector("#info");
-const zwsr = () => document.createTextNode("\u200b");
-let config = {
-  dark: true,
-  mono: false,
-  fontsize: getComputedStyle(document.body).fontSize,
-};
-const splitHash = decodedHash.split("\u2223");
-if (splitHash.length > 1) {
-  let bodiesData = JSON.parse(splitHash[1]);
-  for (let n = 1; n < bodiesData.length; n++) {
-    const div = document.createElement("div");
-    div.classList.add("body");
-    div.classList.add("dark");
-    div.classList.add("serif");
-    div.contentEditable = true;
-    div.id = `b${n}`;
-    document.body.appendChild(div);
-  }
-  config = JSON.parse(splitHash[0]);
-  setConfig(config);
 
-  for (let id in bodiesData) {
-    console.log(id);
-    let bodyData = bodiesData[id];
-    console.log(bodyData);
-    let body = document.querySelector(`#b${id}`);
-    body.innerHTML = bodyData["data"];
-    console.log(bodyData["data"]);
-    body.style.width = bodyData["width"];
-    body.style.height = bodyData["height"];
-  }
-} else {
-  setConfig({});
-  for (let body of bodies) {
-    body.innerHTML = decodedHash;
+// I use this separator in many places
+const zwsr = () => document.createTextNode("\u200b");
+
+// Base config
+let config = {
+    dark: true,
+    mono: false,
+    fontsize: getComputedStyle(document.body).fontSize,
+  };
+
+function loadHash() {
+  const currentHash = window.location.hash.substring(1);
+  const decodedHash = decodeURIComponent(currentHash);
+  const splitHash = decodedHash.split("\u2223");
+
+  if (splitHash.length > 1) {
+    let bodiesData = JSON.parse(splitHash[1]);
+    for (let n = 1; n < bodiesData.length; n++) {
+      const div = document.createElement("div");
+      div.classList.add("body");
+      div.classList.add("dark");
+      div.classList.add("serif");
+      div.contentEditable = true;
+      div.id = `b${n}`;
+      document.body.appendChild(div);
+    }
+    config = JSON.parse(splitHash[0]);
+    setConfig(config);
+
+    for (let id in bodiesData) {
+      console.log(id);
+      let bodyData = bodiesData[id];
+      console.log(bodyData);
+      let body = document.querySelector(`#b${id}`);
+      body.innerHTML = bodyData["data"];
+      console.log(bodyData["data"]);
+      body.style.width = bodyData["width"];
+      body.style.height = bodyData["height"];
+      body.style.fontSize = bodyData["fontSize"];
+    }
+  } else {
+    setConfig({});
+    for (let body of bodies) {
+      body.innerHTML = decodedHash;
+    }
   }
 }
-// Refresh the list of bodies
-bodies = document.getElementsByClassName("body");
-
-helpDiv.onmousedown = (ev) => {
-  if (ev.button !== 0) {
-    return;
-  }
-  helpDiv.style.display = "none";
-  body.classList.remove("blur");
-};
 
 function setConfig(config) {
   console.log("Setting config to ", config);
@@ -692,9 +715,27 @@ function setConfig(config) {
   document.body.style.fontSize = `${config.fontsize}px`;
   //body.style.width = `${config.width}px`;
 }
+
+// Initialise data from the URL string
+loadHash()
+
+// Refresh the list of bodies
+bodies = document.getElementsByClassName("body");
+
+helpDiv.onmousedown = (ev) => {
+  if (ev.button !== 0) {
+    return;
+  }
+  helpDiv.style.display = "none";
+  body.classList.remove("blur");
+};
+
+
 function save() {
-  // Uh, the regex has issues with the hat in the bookmarklet…
   let savedata = [];
+  // The regex is to remove "live" buttons from saving as "live" (but dead) buttons
+  // TODO(me) A nicer way to fix is that on-load I should re-live buttons. But that
+  // was a bit annoying for a first iteration.
   const regex =
     /<div class="wrap"><[^\s]+ class="alive">\s*([^\s]+)\s*<\/[^>]+><\/div>/g;
   for (let body of bodies) {
@@ -705,6 +746,7 @@ function save() {
     b["data"] = streamlined;
     b["width"] = body.style.width;
     b["height"] = body.style.height;
+    b["fontSize"] = body.style.fontSize;
     savedata.push(b);
   }
 
@@ -717,14 +759,8 @@ function save() {
   info.innerHTML = "&#x1F4BE;";
   info.classList.add("fades");
 }
-function reset() {
-  info.classList.remove("fades");
-  info.innerText = "";
-}
-function common(ev) {
-  reset();
-  return ev.button !== 0;
-}
+
+// This is the main hook that makes buttons work
 for (let body of bodies) {
   body.addEventListener("dblclick", (event) => {
     const selectedText = window.getSelection();
@@ -758,6 +794,8 @@ for (let body of bodies) {
     }
   });
 }
+
+// This is the stack machine for typing and Markdown things
 let keyStack = {};
 let listing = {};
 const hookBody = (body) => {
@@ -918,6 +956,7 @@ const hookBody = (body) => {
     }
   });
 };
+
 for (let body of bodies) {
   hookBody(body);
 }

@@ -1,398 +1,30 @@
-const pythonKeywords = [
-  "False",
-  "None",
-  "True",
-  "and",
-  "as",
-  "assert",
-  "async",
-  "await",
-  "break",
-  "class",
-  "continue",
-  "def",
-  "del",
-  "elif",
-  "else",
-  "except",
-  "finally",
-  "for",
-  "from",
-  "global",
-  "if",
-  "import",
-  "in",
-  "is",
-  "lambda",
-  "nonlocal",
-  "not",
-  "or",
-  "pass",
-  "raise",
-  "return",
-  "try",
-  "while",
-  "with",
-  "yield",
-];
+// highlight.js
 
-const javascriptKeywords = [
-  "abstract",
-  "arguments",
-  "await",
-  "boolean",
-  "break",
-  "case",
-  "catch",
-  "class",
-  "const",
-  "continue",
-  "debugger",
-  "default",
-  "delete",
-  "do",
-  "else",
-  "enum",
-  "eval",
-  "export",
-  "extends",
-  "false",
-  "finally",
-  "for",
-  "function",
-  "if",
-  "implements",
-  "import",
-  "in",
-  "instanceof",
-  "interface",
-  "let",
-  "new",
-  "null",
-  "number",
-  "of",
-  "package",
-  "private",
-  "protected",
-  "public",
-  "return",
-  "shorthand",
-  "static",
-  "super",
-  "switch",
-  "this",
-  "throw",
-  "true",
-  "try",
-  "typeof",
-  "undefined",
-  "var",
-  "void",
-  "while",
-  "with",
-  "yield",
-];
-const keywords = pythonKeywords.concat(javascriptKeywords);
-const hilite = () => {
-  const pres = document.getElementsByTagName("pre");
-  for (let pre of pres) {
-    let text = pre.innerHTML;
-    for (let kw of keywords) {
-      text = text.replaceAll(kw + " ", `<span class='keyword'>${kw}</span> `);
-    }
-    text = text.replaceAll(
-      /[^>]("[^"]*")[^>]/g,
-      "<span class='string'>$1</span>"
-    );
-    //text = text.replaceAll(/[^>]({)[^>]/g, "<span class='brace'>$1</span>")
-    //text = text.replaceAll(/[^>](})[^>|$]/g, "<span class='brace'>$1</span>")
-    //text = text.replaceAll(/[^>](\;)$/g, "<span class='brace'>$1</span>")
-    pre.innerHTML = text;
-  }
-};
-const mono = {
-  text: ["mono"],
-  action: (ev) => {
-    if (common(ev)) {
-      return;
-    }
-    for (let body of bodies) {
-      body.classList.remove("serif");
-      body.classList.remove("mono");
-      body.classList.add("mono");
-    }
+// commands.js
 
-    config.mono = true;
-  },
-  description: "Switch to a monospace font (Monoid) (stored in config)",
-  el: "u",
-};
 
-const help = {
-  text: ["help"],
-  action: (ev) => {
-    if (common(ev)) {
-      return;
-    }
-    helpDiv.style.display = "block";
-    body.classList.add("blur");
-  },
-  description: "Display help",
-  el: "u",
-};
+// Globals that are used everywhere
 
-const serif = {
-  text: ["serif"],
-  action: (ev) => {
-    if (common(ev)) {
-      return;
-    }
-    body.classList.remove("mono");
-    body.classList.remove("serif");
-    body.classList.add("serif");
-    config.mono = false;
-  },
-  description: "Switch to a serif font (Reforma1969) (stored in config)",
-  el: "u",
-};
-const newDoc = {
-  text: ["new"],
-  action: (ev) => {
-    if (common(ev)) {
-      return;
-    }
-    body.innerHTML = "";
-  },
-  description: "Create a new document (erasing the current one)",
-  el: "u",
-};
-const fontup = {
-  text: ["fontup"],
-  action: (ev) => {
-    if (common(ev)) {
-      return;
-    }
-    const fontSize = getComputedStyle(document.body).fontSize;
-    const newFontSize = parseFloat(fontSize) + 2;
-    document.body.style.fontSize = `${newFontSize}px`;
-    config.fontsize = newFontSize;
-  },
-  description: "Increase the document font by 2 pixels (stored in config)",
-  el: "u",
-};
-
-/*const narrow = {
-    text: ["narrow"],
-    action: (ev) => {
-      if (common(ev)) {
-        return;
-      }
-      const width = getComputedStyle(body).width;
-      const newWidth = parseFloat(width) * 0.9;
-      body.style.width = `${newWidth}px`;
-      config.width = newWidth;
-    },
-    description: "Reduce the typing area width by 10% (stored in config)",
-    el: "u",
-  };*/
-
-/*const widen = {
-    text: ["widen"],
-    action: (ev) => {
-      if (common(ev)) {
-        return;
-      }
-      const width = getComputedStyle(body).width;
-      const newWidth = parseFloat(width) * 1.1;
-      body.style.width = `${newWidth}px`;
-      config.width = newWidth;
-    },
-    description: "Increase the typing area width by 10% (stored in config)",
-    el: "u",
-  };*/
-
-const print_ = {
-  text: ["print", "🖨️"],
-  action: (ev) => {
-    if (common(ev)) {
-      return;
-    }
-    window.print();
-  },
-  description: "Trigger the print dialog",
-  el: "u",
-};
-
-const save_ = {
-  text: ["save", "💾"],
-  action: (ev) => {
-    if (common(ev)) {
-      return;
-    }
-    save();
-    ev.stopPropagation();
-  },
-  description:
-    "Save the current changes and config in the URL, so it survives browser crashes",
-  el: "u",
-};
-// TODO: document.execCommand is deprecated. I could do the same by playing with selections and ranges.
-const italic = {
-  text: ["italic", "i"],
-  action: (ev) => {
-    if (common(ev)) {
-      return;
-    }
-    document.execCommand("italic", false, null);
-  },
-  description: "Italicize the selected text",
-  el: "i",
-};
-
-const split = {
-  text: ["split"],
-  action: (ev) => {
-    if (common(ev)) {
-      return;
-    }
-    // This is now repeated!
-    n = bodies.length;
-    const div = document.createElement("div");
-    div.classList.add("body");
-    div.classList.add("dark");
-    div.classList.add("serif");
-    div.contentEditable = true;
-    div.id = `b${n}`;
-    document.body.appendChild(div);
-    hookBody(div);
-    bodies = document.getElementsByClassName("body");
-  },
-  description: "Add a new editing buffer",
-  el: "u",
-};
-
-const underline = {
-  text: ["underline", "u"],
-  action: (ev) => {
-    if (common(ev)) {
-      return;
-    }
-    document.execCommand("underline", false, null);
-  },
-  description: "Underline the selected text",
-  el: "u",
-};
-
-const bold = {
-  text: ["bold", "b"],
-  action: (ev) => {
-    if (common(ev)) {
-      return;
-    }
-    document.execCommand("bold", false, null);
-  },
-  description: "Bold the selected text",
-  el: "b",
-};
-
-const dark = {
-  text: ["dark"],
-  action: (ev) => {
-    if (common(ev)) {
-      return;
-    }
-    for (let body of bodies) {
-      body.classList.toggle("dark");
-    }
-
-    config.dark = !config.dark;
-  },
-  description: "Toggle dark/light mode  (stored in config)",
-  el: "u",
-};
-
-const fontdown = {
-  text: ["fontdown"],
-  action: (ev) => {
-    if (common(ev)) {
-      return;
-    }
-    const fontSize = getComputedStyle(document.body).fontSize;
-    const newFontSize = parseFloat(fontSize) - 2;
-    document.body.style.fontSize = `${newFontSize}px`;
-    config.fontsize = newFontSize;
-  },
-  description: "Decrease the document font by 2 pixels (stored in config)",
-  el: "u",
-};
-
-const buttons = [
-  mono,
-  serif,
-  fontup,
-  fontdown,
-  newDoc,
-  print_,
-  dark,
-  save_,
-  bold,
-  italic,
-  underline,
-  help,
-  split,
-  //narrow,
-  //widen,
-];
-let helpTable = [`<tr><td>Command</td><td>Help</td></tr>`];
-for (let button of buttons) {
-  const commandText = button.text.join("/");
-  const tr = `<tr><td>${commandText}</td><td>${button.description}</td></tr>`;
-  helpTable.push(tr);
-}
-document.getElementById("commands").innerHTML = helpTable.join("\n");
-
-const currentHash = window.location.hash.substring(1);
-const decodedHash = decodeURIComponent(currentHash);
+// HTML elements of interest
 let bodies = document.getElementsByClassName("body");
 const helpDiv = document.querySelector("#help");
 const info = document.querySelector("#info");
-const zwsr = () => document.createTextNode("\u200b");
-let config = {
-  dark: true,
-  mono: false,
-  fontsize: getComputedStyle(document.body).fontSize,
-};
-const splitHash = decodedHash.split("\u2223");
-if (splitHash.length > 1) {
-  let bodiesData = JSON.parse(splitHash[1]);
-  for (let n = 1; n < bodiesData.length; n++) {
-    const div = document.createElement("div");
-    div.classList.add("body");
-    div.classList.add("dark");
-    div.classList.add("serif");
-    div.contentEditable = true;
-    div.id = `b${n}`;
-    document.body.appendChild(div);
-  }
-  config = JSON.parse(splitHash[0]);
-  setConfig(config);
 
-  for (let id in bodiesData) {
-    console.log(id);
-    let bodyData = bodiesData[id];
-    console.log(bodyData);
-    let body = document.querySelector(`#b${id}`);
-    body.innerHTML = bodyData["data"];
-    console.log(bodyData["data"]);
-    body.style.width = bodyData["width"];
-    body.style.height = bodyData["height"];
-  }
-} else {
-  setConfig({});
-  for (let body of bodies) {
-    body.innerHTML = decodedHash;
-  }
-}
+// I use this separator in many places
+const zwsr = () => document.createTextNode("\u200b");
+
+// Base config
+let config = {
+    dark: true,
+    mono: false,
+    fontsize: getComputedStyle(document.body).fontSize,
+  };
+
+// load.js
+
+// Initialise data from the URL string
+loadHash()
+
 // Refresh the list of bodies
 bodies = document.getElementsByClassName("body");
 
@@ -404,34 +36,12 @@ helpDiv.onmousedown = (ev) => {
   body.classList.remove("blur");
 };
 
-function setConfig(config) {
-  console.log("Setting config to ", config);
-  if (config.dark === undefined || config.dark) {
-    console.log(bodies);
-    for (let body of bodies) {
-      console.log(body);
-      body.classList.add("dark");
-    }
-  } else {
-    for (let body of bodies) {
-      body.classList.remove("dark");
-    }
-  }
-  if (config.mono) {
-    for (let body of bodies) {
-      body.classList.add("mono");
-    }
-  } else {
-    for (let body of bodies) {
-      body.classList.add("serif");
-    }
-  }
-  document.body.style.fontSize = `${config.fontsize}px`;
-  //body.style.width = `${config.width}px`;
-}
+
 function save() {
-  // Uh, the regex has issues with the hat in the bookmarklet…
   let savedata = [];
+  // The regex is to remove "live" buttons from saving as "live" (but dead) buttons
+  // TODO(me) A nicer way to fix is that on-load I should re-live buttons. But that
+  // was a bit annoying for a first iteration.
   const regex =
     /<div class="wrap"><[^\s]+ class="alive">\s*([^\s]+)\s*<\/[^>]+><\/div>/g;
   for (let body of bodies) {
@@ -442,6 +52,7 @@ function save() {
     b["data"] = streamlined;
     b["width"] = body.style.width;
     b["height"] = body.style.height;
+    b["fontSize"] = body.style.fontSize;
     savedata.push(b);
   }
 
@@ -454,14 +65,8 @@ function save() {
   info.innerHTML = "&#x1F4BE;";
   info.classList.add("fades");
 }
-function reset() {
-  info.classList.remove("fades");
-  info.innerText = "";
-}
-function common(ev) {
-  reset();
-  return ev.button !== 0;
-}
+
+// This is the main hook that makes buttons work
 for (let body of bodies) {
   body.addEventListener("dblclick", (event) => {
     const selectedText = window.getSelection();
@@ -495,6 +100,8 @@ for (let body of bodies) {
     }
   });
 }
+
+// This is the stack machine for typing and Markdown things
 let keyStack = {};
 let listing = {};
 const hookBody = (body) => {
@@ -655,6 +262,7 @@ const hookBody = (body) => {
     }
   });
 };
+
 for (let body of bodies) {
   hookBody(body);
 }
