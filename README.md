@@ -35,10 +35,11 @@ Ideally the whole editor would live in a bookmarklet, as a `data:text/html` URI.
 - Print preview looks bad, but when printing it actually works. It also prints the "buttons". I'm still unsure if I want to fix this.
 
 ### <a name='Plannedfeatures'></a>Planned features?
-- Creating headings by typing hashes at the beginning of the line.
-- Checkboxes.
-- Code cleanup, there is a lot of repetition (particularly in how I handle and rewrite selection ranges).
-- Inject the fonts so there is no need to pull the CSSs for mono and serif.
+- [x] ~~Creating headings by typing hashes at the beginning of the line.~~
+- [ ] Checkboxes.
+- [ ] Code cleanup, there is a lot of repetition (particularly in how I handle and rewrite selection ranges).
+- [ ] Code cleanup, make it easier to reason about and extend, since I'm using it pretty regularly.
+- [x] ~~Inject the fonts so there is no need to pull the CSSs for mono and serif.~~
 
 ### <a name='Thecommandsavailablesofararethefollowing'></a>The commands available (so far) are the following
 
