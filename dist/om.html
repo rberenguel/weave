@@ -533,7 +533,7 @@ const save_ = {
     ev.stopPropagation();
   },
   description:
-    "Save the current changes and config in the URL, so it survives browser crashes",
+  "Save the current changes and config in the URL, so it survives browser crashes",
   el: "u",
 };
 // TODO: document.execCommand is deprecated. I could do the same by playing with selections and ranges.
@@ -595,46 +595,92 @@ const bold = {
   el: "b",
 };
 
+const evalExpr = (selectionText) => {
+  console.log("Evaluating "+selectionText)
+  const evaluation = eval?.(selectionText);
+  const matchesAssignment = selectionText.match(/(\w*)\s*=/);
+  let assignment
+  if(matchesAssignment){
+    const variable = matchesAssignment[1];
+    console.log("Has an equal, variable is named ", variable);
+    assignment = document.createElement("span")
+    assignment.classList.add("assignment");
+    const assignmentText = document.createTextNode(`${variable}`);
+    assignment.appendChild(assignmentText);
+  }
+  const text = document.createTextNode(evaluation);
+  return [assignment, text]
+}
+
+const wireEval = () => {
+  const selection = window.getSelection();
+  const selectionText = selection+"";
+  let [assignment, text] = evalExpr(selectionText)
+  const code = document.createElement("code"); // TODO(me) this should be more "live code"
+  let range = selection.getRangeAt(0);
+  const parentNode = range.startContainer.parentNode
+  const tag = parentNode.tagName
+  range.deleteContents();
+  if(tag == "CODE"){
+    parentNode.appendChild(text);
+  } else {
+    if(assignment){
+      code.appendChild(assignment);
+    }
+    code.appendChild(text);
+    range.insertNode(code);
+    if(assignment){
+      assignment.insertAdjacentHTML("afterend", " = ");
+    }
+    code.insertAdjacentHTML("beforebegin", "\u200b");
+    code.insertAdjacentHTML("afterend", "\u200b");
+  }
+  return code
+}
+
 const eval_ = {
-  text: ["eval", "="],
+  text: ["eval", "=", "🧮"],
   action: (ev) => {
     if (common(ev)) {
       return;
     }
-    const selection = window.getSelection();
-    const selectionText = selection+"";
-    console.log("Evaluating "+selectionText)
-    const evaluation = eval?.(selectionText);
-    const matchesAssignment = selectionText.match(/(\w*)\s*=/);
-    let assignment
-    if(matchesAssignment){
-      const variable = matchesAssignment[1];
-      console.log("Has an equal, variable is named ", variable);
-      assignment = document.createElement("span")
-      assignment.classList.add("assignment");
-      const assignmentText = document.createTextNode(`${variable}`);
-      assignment.appendChild(assignmentText);
-    }
-    const code = document.createElement("code");
-    const text = document.createTextNode(evaluation);
-    let range = selection.getRangeAt(0);
-    const parentNode = range.startContainer.parentNode
-    const tag = parentNode.tagName
-    range.deleteContents();
-    if(tag == "CODE"){
-      parentNode.appendChild(text);
-    } else {
+    const code = wireEval()
+    code.eval = (node, content) => {
+      const src = node
+      console.log(src)
+     console.log(content)
+      let [assignment, text] = evalExpr(content);
+      src.innerHTML = ''; 
       if(assignment){
-        code.appendChild(assignment);
+        src.appendChild(assignment);
       }
-      code.appendChild(text);
-      range.insertNode(code);
+      src.appendChild(text);
+      //range.insertNode(code);
       if(assignment){
         assignment.insertAdjacentHTML("afterend", " = ");
       }
-      code.insertAdjacentHTML("beforebegin", "\u200b");
-      code.insertAdjacentHTML("afterend", "\u200b");
+      src.insertAdjacentHTML("beforebegin", "\u200b");
+      src.insertAdjacentHTML("afterend", "\u200b");
     }
+    code.addEventListener("dblclick", (ev) => {
+      const src = ev.srcElement
+      const content = src.textContent
+     ev.srcElement.eval(src, content)
+     const codes = document.getElementsByTagName("code")
+      for(let cod of codes){
+        if(cod == src){
+          console.log("Skipping self")
+          continue
+        } else {
+          const dblclickEvent = new MouseEvent('dblclick', {
+            'view': window,
+            'bubbles': false,
+            'cancelable': false
+          });
+          cod.dispatchEvent(dblclickEvent)
+        }
+      }
+    });
   },
   description: "Evaluate (JavaScript) the selected text",
   el: "u",
