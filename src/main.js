@@ -10,7 +10,7 @@ let bodies = document.getElementsByClassName("body");
 const helpDiv = document.querySelector("#help");
 const info = document.querySelector("#info");
 
-// I use this separator in many places
+// I use this separator in many places  
 const zwsr = () => document.createTextNode("\u200b");
 
 // Base config
@@ -126,8 +126,8 @@ const hookBody = (body) => {
       range.deleteContents();
       return range;
     };
-    console.log(event.key);
-    console.log(keyStack);
+    //console.log(event.key);
+    //console.log(keyStack);
     if (event.key === "-") {
       // State machine for lists and horizontal separators.
       // Keeps track of state in keyStack.

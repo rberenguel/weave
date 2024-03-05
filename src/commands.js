@@ -131,10 +131,10 @@ const save_ = {
       return;
     }
     save();
-    ev.stopPropagation();
+    //ev.stopPropagation();
   },
   description:
-  "Save the current changes and config in the URL, so it survives browser crashes",
+    "Save the current changes and config in the URL, so it survives browser crashes",
   el: "u",
 };
 // TODO: document.execCommand is deprecated. I could do the same by playing with selections and ranges.
@@ -197,39 +197,60 @@ const bold = {
 };
 
 const evalExpr = (selectionText) => {
-  console.log("Evaluating "+selectionText)
-  const evaluation = eval?.(selectionText);
-  const matchesAssignment = selectionText.match(/(\w*)\s*=\s*(.*)/);
-  let assignment, rvalue
-  if(matchesAssignment){
-    const variable = matchesAssignment[1];
-    console.log("Has an equal, variable is named ", variable);
-    assignment = document.createElement("span");
-    assignment.classList.add("assignment");
-    rvalue = document.createTextNode(matchesAssignment[2])
-    const assignmentText = document.createTextNode(`${variable}`);
-    assignment.appendChild(assignmentText);
+  console.log("Evaluating " + selectionText);
+  try {
+    const evaluation = eval?.(selectionText);
+    const matchesAssignment = selectionText.match(/(\w*)\s*=\s*(.*)/);
+    let assignment, rvalue;
+    if (matchesAssignment) {
+      const variable = matchesAssignment[1];
+      console.log("Has an equal, variable is named ", variable);
+      assignment = document.createElement("span");
+      assignment.classList.add("assignment");
+      rvalue = document.createTextNode(matchesAssignment[2]);
+      const assignmentText = document.createTextNode(`${variable}`);
+      assignment.appendChild(assignmentText);
+    }
+    const text = document.createTextNode(evaluation);
+    return [assignment, rvalue, text, null];
+  } catch (error) {
+    return [null, null, null, error];
   }
-  const text = document.createTextNode(evaluation);
-  return [assignment, rvalue, text]
-}
+};
 
 const wireEval = () => {
   const selection = window.getSelection();
-  const selectionText = selection+"";
-  let [assignment, rvalue, evaluation] = evalExpr(selectionText)
+  const selectionText = selection + "";
+  let [assignment, rvalue, evaluation] = evalExpr(selectionText);
   const code = document.createElement("code"); // TODO(me) this should be more "live code"
+  code.classList.add("wired");
   let range = selection.getRangeAt(0);
-  const parentNode = range.startContainer.parentNode
-  const tag = parentNode.tagName
-  range.deleteContents();
-  if(tag == "CODE"){
-    parentNode.appendChild(evaluation);
-    parentNode.data = selectionText
+  // We need to skip the assignment span to get to the code block…
+  // Or stay one below for no-assignments :shrug:
+  const parentNodeAssignment = range.startContainer.parentNode.parentNode;
+  const parentNodePlain = range.startContainer.parentNode;
+  const tagAssignment = parentNodeAssignment.tagName;
+  const tagPlain = parentNodePlain.tagName;
+  const skipAssignment =
+    tagAssignment == "CODE" && parentNodeAssignment.classList.contains("wired");
+  const skipPlain =
+    tagPlain == "CODE" && parentNodePlain.classList.contains("wired");
+  if (skipPlain || skipAssignment) {
+    // If the block is wired we skip
+    console.log("Skipping already wired");
+    // I'm returning undefined for now, but I likely will need the node
+    // further down.
+    if (skipPlain) {
+      return undefined;
+    } else {
+      return undefined;
+    }
   } else {
-    code.data = selectionText
-    console.log("Set data to", code.data)
-    if(assignment){
+    range.deleteContents();
+    code.data = selectionText;
+    code.hover_title = code.data;
+    console.log("Set data to", code.data);
+    if (assignment) {
       code.appendChild(assignment);
       code.appendChild(rvalue);
       assignment.insertAdjacentHTML("afterend", " = ");
@@ -240,8 +261,24 @@ const wireEval = () => {
     code.insertAdjacentHTML("beforebegin", "\u200b");
     code.insertAdjacentHTML("afterend", "\u200b");
   }
-  return code
-}
+  return code;
+};
+
+const codeInfo = document.querySelector(".code-info");
+let codeInfoTimeout;
+
+const observer = new MutationObserver((mutations) => {
+  mutations.forEach((mutation) => {
+    if (mutation.type === "childList" || mutation.type === "characterData") {
+      const parent = mutation.target.parentElement;
+      console.log(mutation.target.parentElement);
+      if (parent.classList.contains("wired")) {
+        parent.classList.add("dirty");
+        parent.hover_title = "edited";
+      }
+    }
+  });
+});
 
 const eval_ = {
   text: ["eval", "🧮"],
@@ -249,35 +286,73 @@ const eval_ = {
     if (common(ev)) {
       return;
     }
-    const code = wireEval()
+    const code = wireEval();
+    if (!code) {
+      return;
+    }
     code.eval = (node, content) => {
-      const src = node
-      console.log(src)
-     console.log(content)
-      let [assignment, rvalue, evaluation] = evalExpr(content);
-      src.innerHTML = ''; 
-    if(assignment){
-      src.appendChild(assignment);
-      src.appendChild(rvalue);
-      assignment.insertAdjacentHTML("afterend", " = ");
-    } else {
-      src.appendChild(evaluation);
-    }
-     src.insertAdjacentHTML("beforebegin", "\u200b");
+      const src = node;
+      src.classList.remove("dirty");
+      console.log(src);
+      console.log(content);
+      src.data = content;
+      // TODO(me) Should add the index already on construction as empty and
+      // populate on iteration
+      src.hover_title = src.data;
+      let [assignment, rvalue, evaluation, error] = evalExpr(content);
+      if(error){
+        src.hover_title = error;
+        src.classList.add("error")
+        return
+      }
+      src.innerHTML = "";
+      if (assignment) {
+        src.appendChild(assignment);
+        src.appendChild(rvalue);
+        assignment.insertAdjacentHTML("afterend", " = ");
+      } else {
+        src.appendChild(evaluation);
+      }
+      src.insertAdjacentHTML("beforebegin", "\u200b");
       src.insertAdjacentHTML("afterend", "\u200b");
-    }
+    };
+
+    observer.observe(code, {
+      childList: true,
+      subtree: true,
+      characterData: true,
+    });
+    console.log("Added the observer");
+    code.addEventListener("mouseover", (ev) => {
+      codeInfoTimeout = setTimeout(() => {
+        codeInfo.style.left = ev.clientX + 10 + "px";
+        codeInfo.style.top = ev.clientY + 10 + "px";
+
+        codeInfo.textContent = ev.target.hover_title;
+        codeInfo.classList.add("show");
+      }, 1000);
+    });
+    code.addEventListener("mouseout", () => {
+      clearTimeout(codeInfoTimeout);
+      codeInfo.classList.remove("show");
+    });
+
     code.addEventListener("dblclick", (ev) => {
-      const src = ev.srcElement
-      const content = src.textContent
-     ev.srcElement.eval(src, content)
-     const codes = document.getElementsByTagName("code")
-      for(let cod of codes){
-        if(cod == src){
-          console.log("Skipping self")
-          continue
+      const src = ev.srcElement;
+      const content = src.textContent;
+      ev.srcElement.eval(src, content);
+      const codes = document.getElementsByTagName("code");
+      let i = 0;
+      for (let cod of codes) {
+        // TODO(me) This would look way better as an HTML hover
+        cod.hover_title = `[${i}] ${cod.hover_title}`;
+        i++;
+        if (cod == src) {
+          console.log("Skipping self");
+          continue;
         } else {
-          console.log("data", cod.data)
-          cod.eval(cod, cod.data)
+          console.log("data", cod.data);
+          cod.eval(cod, cod.data);
         }
       }
     });
@@ -308,7 +383,7 @@ const fontdown = {
     if (common(ev)) {
       return;
     }
-    // TODO(me): This is hacky, if I wrap a button in italics for example 
+    // TODO(me): This is hacky, if I wrap a button in italics for example
     // this stops being valid as a parent id. It is probably better if
     // I can hook the action somehow to the parent directly?
     const parentBodyId = ev.srcElement.parentElement.parentElement.id;
