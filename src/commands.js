@@ -240,7 +240,7 @@ const wireEval = () => {
 }
 
 const eval_ = {
-  text: ["eval", "=", "🧮"],
+  text: ["eval", "🧮"],
   action: (ev) => {
     if (common(ev)) {
       return;
