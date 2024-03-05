@@ -199,40 +199,44 @@ const bold = {
 const evalExpr = (selectionText) => {
   console.log("Evaluating "+selectionText)
   const evaluation = eval?.(selectionText);
-  const matchesAssignment = selectionText.match(/(\w*)\s*=/);
-  let assignment
+  const matchesAssignment = selectionText.match(/(\w*)\s*=\s*(.*)/);
+  let assignment, rvalue
   if(matchesAssignment){
     const variable = matchesAssignment[1];
     console.log("Has an equal, variable is named ", variable);
-    assignment = document.createElement("span")
+    assignment = document.createElement("span");
     assignment.classList.add("assignment");
+    rvalue = document.createTextNode(matchesAssignment[2])
     const assignmentText = document.createTextNode(`${variable}`);
     assignment.appendChild(assignmentText);
   }
   const text = document.createTextNode(evaluation);
-  return [assignment, text]
+  return [assignment, rvalue, text]
 }
 
 const wireEval = () => {
   const selection = window.getSelection();
   const selectionText = selection+"";
-  let [assignment, text] = evalExpr(selectionText)
+  let [assignment, rvalue, evaluation] = evalExpr(selectionText)
   const code = document.createElement("code"); // TODO(me) this should be more "live code"
   let range = selection.getRangeAt(0);
   const parentNode = range.startContainer.parentNode
   const tag = parentNode.tagName
   range.deleteContents();
   if(tag == "CODE"){
-    parentNode.appendChild(text);
+    parentNode.appendChild(evaluation);
+    parentNode.data = selectionText
   } else {
+    code.data = selectionText
+    console.log("Set data to", code.data)
     if(assignment){
       code.appendChild(assignment);
-    }
-    code.appendChild(text);
-    range.insertNode(code);
-    if(assignment){
+      code.appendChild(rvalue);
       assignment.insertAdjacentHTML("afterend", " = ");
+    } else {
+      code.appendChild(evaluation);
     }
+    range.insertNode(code);
     code.insertAdjacentHTML("beforebegin", "\u200b");
     code.insertAdjacentHTML("afterend", "\u200b");
   }
@@ -250,17 +254,16 @@ const eval_ = {
       const src = node
       console.log(src)
      console.log(content)
-      let [assignment, text] = evalExpr(content);
+      let [assignment, rvalue, evaluation] = evalExpr(content);
       src.innerHTML = ''; 
-      if(assignment){
-        src.appendChild(assignment);
-      }
-      src.appendChild(text);
-      //range.insertNode(code);
-      if(assignment){
-        assignment.insertAdjacentHTML("afterend", " = ");
-      }
-      src.insertAdjacentHTML("beforebegin", "\u200b");
+    if(assignment){
+      src.appendChild(assignment);
+      src.appendChild(rvalue);
+      assignment.insertAdjacentHTML("afterend", " = ");
+    } else {
+      src.appendChild(evaluation);
+    }
+     src.insertAdjacentHTML("beforebegin", "\u200b");
       src.insertAdjacentHTML("afterend", "\u200b");
     }
     code.addEventListener("dblclick", (ev) => {
@@ -273,12 +276,8 @@ const eval_ = {
           console.log("Skipping self")
           continue
         } else {
-          const dblclickEvent = new MouseEvent('dblclick', {
-            'view': window,
-            'bubbles': false,
-            'cancelable': false
-          });
-          cod.dispatchEvent(dblclickEvent)
+          console.log("data", cod.data)
+          cod.eval(cod, cod.data)
         }
       }
     });
