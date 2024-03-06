@@ -2,7 +2,6 @@
 
 // commands.js
 
-
 // Globals that are used everywhere
 
 // HTML elements of interest
@@ -10,20 +9,23 @@ let bodies = document.getElementsByClassName("body");
 const helpDiv = document.querySelector("#help");
 const info = document.querySelector("#info");
 
-// I use this separator in many places  
+// I keep a stack of the last 2 bodies clicked, for printing.
+let bodyClicks = ["b0", "b0"]
+
+// I use this separator in many places
 const zwsr = () => document.createTextNode("\u200b");
 
 // Base config
 let config = {
-    dark: true,
-    mono: false,
-    fontsize: getComputedStyle(document.body).fontSize,
-  };
+  dark: true,
+  mono: false,
+  fontsize: getComputedStyle(document.body).fontSize,
+};
 
 // load.js
 
 // Initialise data from the URL string
-loadHash()
+loadHash();
 
 // Refresh the list of bodies
 bodies = document.getElementsByClassName("body");
@@ -33,23 +35,22 @@ helpDiv.onmousedown = (ev) => {
     return;
   }
   helpDiv.style.display = "none";
-  body.classList.remove("blur");
+  document.getElementById("content").classList.remove("blur");
 };
-
 
 function save() {
   let savedata = [];
   // The regex is to remove "live" buttons from saving as "live" (but dead) buttons
   // TODO(me) A nicer way to fix is that on-load I should re-live buttons. But that
   // was a bit annoying for a first iteration.
-  const regex =
-    /<div class="wrap"><[^\s]+ class="alive">\s*([^\s]+)\s*<\/[^>]+><\/div>/g;
+  //const regex =
+  //  /<div class="wrap"><[^\s]+ class="alive">\s*([^\s]+)\s*<\/[^>]+><\/div>/g;
   for (let body of bodies) {
-    const streamlined = body.innerHTML
-      .replaceAll(regex, "$1")
-      .replaceAll("\u2009", "");
+    //const streamlined = body.innerHTML
+    //  .replaceAll(regex, "$1")
+    //  .replaceAll("\u2009", "");
     let b = {};
-    b["data"] = streamlined;
+    b["data"] = body.innerHTML;
     b["width"] = body.style.width;
     b["height"] = body.style.height;
     b["fontSize"] = body.style.fontSize;
@@ -68,7 +69,12 @@ function save() {
 
 // This is the main hook that makes buttons work
 for (let body of bodies) {
-  body.addEventListener("dblclick", (event) => {
+  body.addEventListener("click", (ev) => {
+    bodyClicks.unshift(body.id);
+    bodyClicks.length = 2
+  });
+  // TODO(me) This will only work well for desktop. Figure out an option for mobile.
+  body.addEventListener("contextmenu", (event) => {
     const selectedText = window.getSelection();
     const range = selectedText.getRangeAt(0);
     if (
@@ -84,6 +90,7 @@ for (let body of bodies) {
       if (button.text.includes(`${selectedText}`)) {
         node = document.createElement(button.el);
         node.onmousedown = button.action;
+        node.dataset.action = `${selectedText}`
       }
     }
 
@@ -97,7 +104,16 @@ for (let body of bodies) {
       range.insertNode(div);
       div.insertAdjacentHTML("beforebegin", "&thinsp;");
       div.insertAdjacentHTML("afterend", "&thinsp;");
+      event.preventDefault();
     }
+  });
+  body.addEventListener("paste", (event)=> {
+    // Paste takes a slight bit to modify the DOM, if I trigger
+    // the wiring without waiting a pasted button might not be wired
+    // properly.
+    setTimeout(() => {
+      wireEverything(); 
+    }, 100);
   });
 }
 

@@ -1,3 +1,40 @@
+function getClosestBodyContainer(element) {
+  let currentParent = element.parentNode;
+  while (currentParent !== document.documentElement) {
+    if(currentParent.classList.contains("body") && currentParent.id.startsWith("b")){
+      return currentParent
+    }
+    currentParent = currentParent.parentNode;
+  }
+
+  return null;
+}
+
+const wireEverything = () => {
+  // We have loaded stuff. Let's wire the code blocks:
+  const codes = document.querySelectorAll("code.wired");
+  let i = 0;
+  for (let cod of codes) {
+    cod.hover_title = `[${i}] ${cod.hover_title}`;
+    i++;
+    console.log("data", cod.dataset.eval_string);
+    wireEval(cod, cod.dataset.eval_string);
+    cod.eval(cod, cod.dataset.eval_string);
+  }
+  // Now lets wire the buttons
+  const aliveButtons = document.querySelectorAll("div>.alive");
+  console.log("Wiring all these:")
+  console.log(aliveButtons)
+  for (let aliveButton of aliveButtons){
+    for (let button of buttons) {
+      // This could be sped up by reversing the indexing
+      if (button.text.includes(aliveButton.dataset.action)) {
+        aliveButton.onmousedown = button.action;
+      }
+    }
+  }
+}
+
 function loadHash() {
   const currentHash = window.location.hash.substring(1);
   const decodedHash = decodeURIComponent(currentHash);
@@ -28,6 +65,7 @@ function loadHash() {
       body.style.height = bodyData["height"];
       body.style.fontSize = bodyData["fontSize"];
     }
+    wireEverything();
   } else {
     setConfig({});
     for (let body of bodies) {

@@ -35,7 +35,7 @@ const help = {
       return;
     }
     helpDiv.style.display = "block";
-    body.classList.add("blur");
+    document.getElementById("content").classList.add("blur");
   },
   description: "Display help",
   el: "u",
@@ -72,7 +72,13 @@ const fontup = {
     if (common(ev)) {
       return;
     }
-    const parentBodyId = ev.srcElement.parentElement.parentElement.id;
+    const closestBody = getClosestBodyContainer(ev.srcElement);
+    if (!closestBody) {
+      console.error(
+        "Could not find a body container for this command. That is _very_ unexpected"
+      );
+    }
+    const parentBodyId = closestBody.id;
     const parentBody = document.getElementById(parentBodyId);
     const fontSize = getComputedStyle(parentBody).fontSize;
     const newFontSize = parseFloat(fontSize) + 2;
@@ -82,35 +88,20 @@ const fontup = {
   el: "u",
 };
 
-/*const narrow = {
-      text: ["narrow"],
-      action: (ev) => {
-        if (common(ev)) {
-          return;
-        }
-        const width = getComputedStyle(body).width;
-        const newWidth = parseFloat(width) * 0.9;
-        body.style.width = `${newWidth}px`;
-        config.width = newWidth;
-      },
-      description: "Reduce the typing area width by 10% (stored in config)",
-      el: "u",
-    };*/
-
-/*const widen = {
-      text: ["widen"],
-      action: (ev) => {
-        if (common(ev)) {
-          return;
-        }
-        const width = getComputedStyle(body).width;
-        const newWidth = parseFloat(width) * 1.1;
-        body.style.width = `${newWidth}px`;
-        config.width = newWidth;
-      },
-      description: "Increase the typing area width by 10% (stored in config)",
-      el: "u",
-    };*/
+function printDiv(divId) {
+  const divElement = document.getElementById(divId);
+  // TODO(me) Needs some minor styling, based on the chosen font (and font size?)
+  const printWindow = window.open("", "", "height=400,width=600");
+  printWindow.document.write("<html><head><title>Print</title>");
+  printWindow.document.write();
+  printWindow.document.write("</head><body>");
+  printWindow.document.write(divElement.innerHTML);
+  printWindow.document.write("</body></html>");
+  printWindow.document.close();
+  printWindow.focus();
+  printWindow.print();
+  printWindow.close();
+}
 
 const print_ = {
   text: ["print", "🖨️"],
@@ -118,7 +109,13 @@ const print_ = {
     if (common(ev)) {
       return;
     }
-    window.print();
+    /*const closestBody = getClosestBodyContainer(ev.srcElement);
+    if(!closestBody){
+      console.error("Could not find a body container for this command. That is _very_ unexpected");
+    }
+    const parentBodyId = closestBody.id;*/
+    printDiv(bodyClicks[0]);
+    //window.print();
   },
   description: "Trigger the print dialog",
   el: "u",
@@ -218,11 +215,21 @@ const evalExpr = (selectionText) => {
   }
 };
 
-const wireEval = () => {
+const pad = (node) => {
+  node.insertAdjacentHTML("afterbegin", "&thinsp;");
+  node.insertAdjacentHTML("beforeend", "&thinsp;");
+};
+
+const wrap = (node) => {
+  node.insertAdjacentHTML("beforebegin", "&thinsp;");
+  node.insertAdjacentHTML("afterend", "&thinsp;");
+};
+
+const wireEvalFromScratch = () => {
   const selection = window.getSelection();
   const selectionText = selection + "";
-  let [assignment, rvalue, evaluation] = evalExpr(selectionText);
-  const code = document.createElement("code"); // TODO(me) this should be more "live code"
+  let [assignment, rvalue, evaluation, error] = evalExpr(selectionText);
+  const code = document.createElement("code");
   code.classList.add("wired");
   let range = selection.getRangeAt(0);
   // We need to skip the assignment span to get to the code block…
@@ -247,9 +254,19 @@ const wireEval = () => {
     }
   } else {
     range.deleteContents();
-    code.data = selectionText;
-    code.hover_title = code.data;
-    console.log("Set data to", code.data);
+    range.insertNode(code);
+    // This no-op is needed to prevent floating weirdness (beforebegin)
+    // and to allow the cursor to go to the end (afterend)
+    wrap(code);
+    code.dataset.eval_string = selectionText;
+    code.hover_title = code.dataset.eval_string;
+    if (error) {
+      code.appendChild(document.createTextNode(selectionText));
+      code.classList.add("error");
+      code.hover_title = error;
+      pad(code);
+      return code;
+    }
     if (assignment) {
       code.appendChild(assignment);
       code.appendChild(rvalue);
@@ -257,10 +274,8 @@ const wireEval = () => {
     } else {
       code.appendChild(evaluation);
     }
-    range.insertNode(code);
-    code.insertAdjacentHTML("beforebegin", "\u200b");
-    code.insertAdjacentHTML("afterend", "\u200b");
   }
+  pad(code);
   return code;
 };
 
@@ -274,11 +289,82 @@ const observer = new MutationObserver((mutations) => {
       console.log(mutation.target.parentElement);
       if (parent.classList.contains("wired")) {
         parent.classList.add("dirty");
+        parent.classList.remove("error");
         parent.hover_title = "edited";
       }
     }
   });
 });
+
+const wireEval = (code) => {
+  code.eval = (node, content) => {
+    const src = node;
+    src.classList.remove("dirty");
+    src.classList.remove("error");
+    console.log(src);
+    console.log(content);
+    src.dataset.eval_string = content;
+    src.dataset.index = "[?]";
+    // TODO(me) Should add the index already on construction as empty and
+    // populate on iteration
+    src.hover_title = src.dataset.eval_string;
+    let [assignment, rvalue, evaluation, error] = evalExpr(content);
+    if (error) {
+      src.hover_title = error;
+      src.classList.add("error");
+      return;
+    }
+    src.innerHTML = "";
+    if (assignment) {
+      src.appendChild(assignment);
+      src.appendChild(rvalue);
+      assignment.insertAdjacentHTML("afterend", " = ");
+    } else {
+      src.appendChild(evaluation);
+    }
+  };
+
+  observer.observe(code, {
+    childList: true,
+    subtree: true,
+    characterData: true,
+  });
+  console.log("Added the observer");
+  code.addEventListener("mouseover", (ev) => {
+    codeInfoTimeout = setTimeout(() => {
+      codeInfo.style.left = ev.clientX + 10 + "px";
+      codeInfo.style.top = ev.clientY + 10 + "px";
+
+      codeInfo.textContent = ev.target.hover_title;
+      codeInfo.classList.add("show");
+    }, 1000);
+  });
+  code.addEventListener("mouseout", () => {
+    clearTimeout(codeInfoTimeout);
+    codeInfo.classList.remove("show");
+  });
+
+  code.addEventListener("contextmenu", (ev) => {
+    ev.preventDefault();
+    const src = ev.srcElement;
+    const content = src.textContent;
+    ev.srcElement.eval(src, content);
+    const codes = document.querySelectorAll("code.wired");
+    let i = 0;
+    for (let cod of codes) {
+      // TODO(me) This would look way better as an HTML hover
+      cod.dataset.index = `[${i}]`;
+      cod.hover_title = `${cod.dataset.index} ${cod.dataset.eval_string}`;
+      i++;
+      if (cod == src) {
+        console.log("Skipping self");
+        continue;
+      } else {
+        cod.eval(cod, cod.dataset.eval_string);
+      }
+    }
+  });
+};
 
 const eval_ = {
   text: ["eval", "🧮"],
@@ -286,76 +372,11 @@ const eval_ = {
     if (common(ev)) {
       return;
     }
-    const code = wireEval();
+    const code = wireEvalFromScratch();
     if (!code) {
       return;
     }
-    code.eval = (node, content) => {
-      const src = node;
-      src.classList.remove("dirty");
-      console.log(src);
-      console.log(content);
-      src.data = content;
-      // TODO(me) Should add the index already on construction as empty and
-      // populate on iteration
-      src.hover_title = src.data;
-      let [assignment, rvalue, evaluation, error] = evalExpr(content);
-      if(error){
-        src.hover_title = error;
-        src.classList.add("error")
-        return
-      }
-      src.innerHTML = "";
-      if (assignment) {
-        src.appendChild(assignment);
-        src.appendChild(rvalue);
-        assignment.insertAdjacentHTML("afterend", " = ");
-      } else {
-        src.appendChild(evaluation);
-      }
-      src.insertAdjacentHTML("beforebegin", "\u200b");
-      src.insertAdjacentHTML("afterend", "\u200b");
-    };
-
-    observer.observe(code, {
-      childList: true,
-      subtree: true,
-      characterData: true,
-    });
-    console.log("Added the observer");
-    code.addEventListener("mouseover", (ev) => {
-      codeInfoTimeout = setTimeout(() => {
-        codeInfo.style.left = ev.clientX + 10 + "px";
-        codeInfo.style.top = ev.clientY + 10 + "px";
-
-        codeInfo.textContent = ev.target.hover_title;
-        codeInfo.classList.add("show");
-      }, 1000);
-    });
-    code.addEventListener("mouseout", () => {
-      clearTimeout(codeInfoTimeout);
-      codeInfo.classList.remove("show");
-    });
-
-    code.addEventListener("dblclick", (ev) => {
-      const src = ev.srcElement;
-      const content = src.textContent;
-      ev.srcElement.eval(src, content);
-      const codes = document.getElementsByTagName("code");
-      let i = 0;
-      for (let cod of codes) {
-        // TODO(me) This would look way better as an HTML hover
-        cod.hover_title = `[${i}] ${cod.hover_title}`;
-        i++;
-        if (cod == src) {
-          console.log("Skipping self");
-          continue;
-        } else {
-          console.log("data", cod.data);
-          cod.eval(cod, cod.data);
-        }
-      }
-    });
+    wireEval(code);
   },
   description: "Evaluate (JavaScript) the selected text",
   el: "u",
@@ -383,10 +404,13 @@ const fontdown = {
     if (common(ev)) {
       return;
     }
-    // TODO(me): This is hacky, if I wrap a button in italics for example
-    // this stops being valid as a parent id. It is probably better if
-    // I can hook the action somehow to the parent directly?
-    const parentBodyId = ev.srcElement.parentElement.parentElement.id;
+    const closestBody = getClosestBodyContainer(ev.srcElement);
+    if (!closestBody) {
+      console.error(
+        "Could not find a body container for this command. That is _very_ unexpected"
+      );
+    }
+    const parentBodyId = closestBody.id;
     const parentBody = document.getElementById(parentBodyId);
     const fontSize = getComputedStyle(parentBody).fontSize;
     const newFontSize = parseFloat(fontSize) - 2;
@@ -411,8 +435,6 @@ const buttons = [
   help,
   split,
   eval_,
-  //narrow,
-  //widen,
 ];
 let helpTable = [`<tr><td>Command</td><td>Help</td></tr>`];
 for (let button of buttons) {

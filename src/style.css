@@ -41,6 +41,7 @@ li {
   min-width: fit-content;
   min-height: fit-content;
   max-height: 95%;
+  max-width: 95%;
   margin: 0.1em;
 }
 
@@ -182,21 +183,20 @@ code.error {
   font-family: "monoidregular";
   position: absolute;
   background-color: var(--light-background);
-  padding: 0.2em;
+  padding: 0.4em;
   border-radius: 5px;
   font-size: 40%;
   border: 1px solid var(--bright-orange);
   box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.2);
   opacity: 0;
-  max-width: 20%;
-  min-width: 5%;
+  max-width: 50%;
   transition: opacity 0.3s ease-in-out;
 }
 
 
 
 .code-info.show {
-  opacity: 0.66;
+  opacity: 0.665;
 }
 
 @media print {
