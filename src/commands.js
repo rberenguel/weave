@@ -48,7 +48,7 @@ const serif = {
       body.classList.add("serif");
       body.classList.remove("mono");
     }
-
+    // TODO(me) This should be panel-local, and in config stored per panel
     config.mono = true;
   },
   description: "Switch to a serif font (Reforma1969) (stored in config)",
