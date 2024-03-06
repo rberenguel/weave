@@ -1,10 +1,8 @@
-// Reset stuff
 function reset() {
   info.classList.remove("fades");
   info.innerText = "";
 }
 
-// Hook I use everywhere
 function common(ev) {
   reset();
   return ev.button !== 0;
@@ -18,7 +16,6 @@ const mono = {
     }
     for (let body of bodies) {
       body.classList.remove("serif");
-      body.classList.remove("mono");
       body.classList.add("mono");
     }
 
@@ -47,10 +44,12 @@ const serif = {
     if (common(ev)) {
       return;
     }
-    body.classList.remove("mono");
-    body.classList.remove("serif");
-    body.classList.add("serif");
-    config.mono = false;
+    for (let body of bodies) {
+      body.classList.add("serif");
+      body.classList.remove("mono");
+    }
+
+    config.mono = true;
   },
   description: "Switch to a serif font (Reforma1969) (stored in config)",
   el: "u",
@@ -103,19 +102,42 @@ function printDiv(divId) {
   printWindow.close();
 }
 
+const close_ = {
+  text: ["close", "❌"],
+  action: (ev) => {
+    if (common(ev)) {
+      return;
+    }
+    // TODO(me) I'm pretty sure closing-saving-loading would fail
+    // if I delete an intermediate panel, needs a "test"
+    const divToRemove = document.getElementById(bodyClicks[0]);
+    const parentElement = divToRemove.parentNode;
+    parentElement.removeChild(divToRemove);
+  },
+  description: "Eliminate a panel",
+  el: "u",
+};
+
+const clear = {
+  text: ["clear", "💨"],
+  action: (ev) => {
+    if (common(ev)) {
+      return;
+    }
+    const divToClear = document.getElementById(bodyClicks[0]);
+    divToClear.innerHTML = "";
+  },
+  description: "Fully eliminate content of a panel",
+  el: "u",
+};
+
 const print_ = {
   text: ["print", "🖨️"],
   action: (ev) => {
     if (common(ev)) {
       return;
     }
-    /*const closestBody = getClosestBodyContainer(ev.srcElement);
-    if(!closestBody){
-      console.error("Could not find a body container for this command. That is _very_ unexpected");
-    }
-    const parentBodyId = closestBody.id;*/
     printDiv(bodyClicks[0]);
-    //window.print();
   },
   description: "Trigger the print dialog",
   el: "u",
@@ -436,6 +458,8 @@ const buttons = [
   help,
   split,
   eval_,
+  close_,
+  clear
 ];
 let helpTable = [`<tr><td>Command</td><td>Help</td></tr>`];
 for (let button of buttons) {
