@@ -261,13 +261,11 @@ a {
       <p>If you need a command, just write it.</p>
       <p>
         Need to <b>bold</b> a piece of text? Just type <b>bold</b> or
-        <b>b</b> and double-click on the word.
+        <b>b</b>, select that and right click to convert it into a <b>bold</b> button. 
       </p>
       <p>It will become your bold button.</p>
       <p>
-        Ideally this whole editor lives in a bookmark and a tab in your browser:
-        nothing is stored remotely. Since I'm still adding some features this is
-        still not available. The inspiration for this was
+        The inspiration for this was
         <a
           href="https://mostlymaths.net/2020/10/202058-readings.html/#worlds-smallest-office-suitehttpszsergecompostsawfice"
           >here</a
@@ -512,8 +510,10 @@ const fontup = {
       return;
     }
     const closestBody = getClosestBodyContainer(ev.srcElement);
-    if(!closestBody){
-      console.error("Could not find a body container for this command. That is _very_ unexpected");
+    if (!closestBody) {
+      console.error(
+        "Could not find a body container for this command. That is _very_ unexpected"
+      );
     }
     const parentBodyId = closestBody.id;
     const parentBody = document.getElementById(parentBodyId);
@@ -527,22 +527,16 @@ const fontup = {
 
 function printDiv(divId) {
   const divElement = document.getElementById(divId);
-
-  // New print window
-  const printWindow = window.open('', '', 'height=400,width=600');
-
-  // Write div content and styles to the new window
-  printWindow.document.write('<html><head><title>Print</title>');
-  printWindow.document.write('<link rel="stylesheet" href="your-styles.css" />'); // Add your CSS
-  printWindow.document.write('</head><body>');
+  // TODO(me) Needs some minor styling, based on the chosen font (and font size?)
+  const printWindow = window.open("", "", "height=400,width=600");
+  printWindow.document.write("<html><head><title>Print</title>");
+  printWindow.document.write();
+  printWindow.document.write("</head><body>");
   printWindow.document.write(divElement.innerHTML);
-  printWindow.document.write('</body></html>');
-
-  printWindow.document.close(); // Necessary for IE >= 10
-  printWindow.focus(); // Required for IE >= 10
-
-  // Print and then close the window
-  printWindow.print(); 
+  printWindow.document.write("</body></html>");
+  printWindow.document.close();
+  printWindow.focus();
+  printWindow.print();
   printWindow.close();
 }
 
@@ -559,7 +553,6 @@ const print_ = {
     const parentBodyId = closestBody.id;*/
     printDiv(bodyClicks[0]);
     //window.print();
-
   },
   description: "Trigger the print dialog",
   el: "u",
@@ -608,6 +601,7 @@ const split = {
     document.body.appendChild(div);
     hookBody(div);
     bodies = document.getElementsByClassName("body");
+    hookBodies();
   },
   description: "Add a new editing buffer",
   el: "u",
@@ -662,14 +656,12 @@ const evalExpr = (selectionText) => {
 const pad = (node) => {
   node.insertAdjacentHTML("afterbegin", "&thinsp;");
   node.insertAdjacentHTML("beforeend", "&thinsp;");
-}
+};
 
 const wrap = (node) => {
   node.insertAdjacentHTML("beforebegin", "&thinsp;");
   node.insertAdjacentHTML("afterend", "&thinsp;");
-}
-
-
+};
 
 const wireEvalFromScratch = () => {
   const selection = window.getSelection();
@@ -703,15 +695,15 @@ const wireEvalFromScratch = () => {
     range.insertNode(code);
     // This no-op is needed to prevent floating weirdness (beforebegin)
     // and to allow the cursor to go to the end (afterend)
-    wrap(code)
+    wrap(code);
     code.dataset.eval_string = selectionText;
     code.hover_title = code.dataset.eval_string;
-    if(error){
+    if (error) {
       code.appendChild(document.createTextNode(selectionText));
       code.classList.add("error");
       code.hover_title = error;
-      pad(code)
-      return code
+      pad(code);
+      return code;
     }
     if (assignment) {
       code.appendChild(assignment);
@@ -721,7 +713,7 @@ const wireEvalFromScratch = () => {
       code.appendChild(evaluation);
     }
   }
-  pad(code)
+  pad(code);
   return code;
 };
 
@@ -750,7 +742,7 @@ const wireEval = (code) => {
     console.log(src);
     console.log(content);
     src.dataset.eval_string = content;
-    src.dataset.index = "[?]"
+    src.dataset.index = "[?]";
     // TODO(me) Should add the index already on construction as empty and
     // populate on iteration
     src.hover_title = src.dataset.eval_string;
@@ -799,7 +791,7 @@ const wireEval = (code) => {
     let i = 0;
     for (let cod of codes) {
       // TODO(me) This would look way better as an HTML hover
-      cod.dataset.index = `[${i}]`
+      cod.dataset.index = `[${i}]`;
       cod.hover_title = `${cod.dataset.index} ${cod.dataset.eval_string}`;
       i++;
       if (cod == src) {
@@ -851,8 +843,10 @@ const fontdown = {
       return;
     }
     const closestBody = getClosestBodyContainer(ev.srcElement);
-    if(!closestBody){
-      console.error("Could not find a body container for this command. That is _very_ unexpected");
+    if (!closestBody) {
+      console.error(
+        "Could not find a body container for this command. That is _very_ unexpected"
+      );
     }
     const parentBodyId = closestBody.id;
     const parentBody = document.getElementById(parentBodyId);
@@ -1053,55 +1047,61 @@ function save() {
   info.classList.add("fades");
 }
 
-// This is the main hook that makes buttons work
-for (let body of bodies) {
-  body.addEventListener("click", (ev) => {
-    bodyClicks.unshift(body.id);
-    bodyClicks.length = 2
-  });
-  // TODO(me) This will only work well for desktop. Figure out an option for mobile.
-  body.addEventListener("contextmenu", (event) => {
-    const selectedText = window.getSelection();
-    const range = selectedText.getRangeAt(0);
-    if (
-      event.srcElement.classList.length > 0 &&
-      event.srcElement.classList.contains("alive")
-    ) {
-      return;
-    }
-    let node;
-
-    for (let button of buttons) {
-      // This can be sped up by reversing the indexing
-      if (button.text.includes(`${selectedText}`)) {
-        node = document.createElement(button.el);
-        node.onmousedown = button.action;
-        node.dataset.action = `${selectedText}`
+const hookBodies = () => {
+  for (let body of bodies) {
+    body.addEventListener("click", (ev) => {
+      console.log(`Adding body ${body.id}`)
+      bodyClicks.unshift(body.id);
+      bodyClicks.length = 2
+    });
+    // TODO(me) This will only work well for desktop. Figure out an option for mobile.
+    body.addEventListener("contextmenu", (event) => {
+      const selectedText = window.getSelection();
+      const range = selectedText.getRangeAt(0);
+      if (
+        event.srcElement.classList.length > 0 &&
+        event.srcElement.classList.contains("alive")
+      ) {
+        return;
       }
-    }
-
-    if (node) {
-      let div = document.createElement("div");
-      node.innerHTML = `${selectedText}`.trim();
-      div.classList.toggle("wrap");
-      node.classList.toggle("alive");
-      range.deleteContents();
-      div.appendChild(node);
-      range.insertNode(div);
-      div.insertAdjacentHTML("beforebegin", "&thinsp;");
-      div.insertAdjacentHTML("afterend", "&thinsp;");
-      event.preventDefault();
-    }
-  });
-  body.addEventListener("paste", (event)=> {
-    // Paste takes a slight bit to modify the DOM, if I trigger
-    // the wiring without waiting a pasted button might not be wired
-    // properly.
-    setTimeout(() => {
-      wireEverything(); 
-    }, 100);
-  });
+      let node;
+  
+      for (let button of buttons) {
+        // This can be sped up by reversing the indexing
+        if (button.text.includes(`${selectedText}`)) {
+          node = document.createElement(button.el);
+          node.onmousedown = button.action;
+          node.dataset.action = `${selectedText}`
+        }
+      }
+  
+      if (node) {
+        let div = document.createElement("div");
+        node.innerHTML = `${selectedText}`.trim();
+        div.classList.toggle("wrap");
+        node.classList.toggle("alive");
+        range.deleteContents();
+        div.appendChild(node);
+        range.insertNode(div);
+        div.insertAdjacentHTML("beforebegin", "&thinsp;");
+        div.insertAdjacentHTML("afterend", "&thinsp;");
+        event.preventDefault();
+      }
+    });
+    body.addEventListener("paste", (event)=> {
+      // Paste takes a slight bit to modify the DOM, if I trigger
+      // the wiring without waiting a pasted button might not be wired
+      // properly.
+      setTimeout(() => {
+        wireEverything(); 
+      }, 100);
+    });
+  }  
 }
+
+hookBodies();
+
+// This is the main hook that makes buttons work
 
 // This is the stack machine for typing and Markdown things
 let keyStack = {};

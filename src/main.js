@@ -67,55 +67,61 @@ function save() {
   info.classList.add("fades");
 }
 
-// This is the main hook that makes buttons work
-for (let body of bodies) {
-  body.addEventListener("click", (ev) => {
-    bodyClicks.unshift(body.id);
-    bodyClicks.length = 2
-  });
-  // TODO(me) This will only work well for desktop. Figure out an option for mobile.
-  body.addEventListener("contextmenu", (event) => {
-    const selectedText = window.getSelection();
-    const range = selectedText.getRangeAt(0);
-    if (
-      event.srcElement.classList.length > 0 &&
-      event.srcElement.classList.contains("alive")
-    ) {
-      return;
-    }
-    let node;
-
-    for (let button of buttons) {
-      // This can be sped up by reversing the indexing
-      if (button.text.includes(`${selectedText}`)) {
-        node = document.createElement(button.el);
-        node.onmousedown = button.action;
-        node.dataset.action = `${selectedText}`
+const hookBodies = () => {
+  for (let body of bodies) {
+    body.addEventListener("click", (ev) => {
+      console.log(`Adding body ${body.id}`)
+      bodyClicks.unshift(body.id);
+      bodyClicks.length = 2
+    });
+    // TODO(me) This will only work well for desktop. Figure out an option for mobile.
+    body.addEventListener("contextmenu", (event) => {
+      const selectedText = window.getSelection();
+      const range = selectedText.getRangeAt(0);
+      if (
+        event.srcElement.classList.length > 0 &&
+        event.srcElement.classList.contains("alive")
+      ) {
+        return;
       }
-    }
-
-    if (node) {
-      let div = document.createElement("div");
-      node.innerHTML = `${selectedText}`.trim();
-      div.classList.toggle("wrap");
-      node.classList.toggle("alive");
-      range.deleteContents();
-      div.appendChild(node);
-      range.insertNode(div);
-      div.insertAdjacentHTML("beforebegin", "&thinsp;");
-      div.insertAdjacentHTML("afterend", "&thinsp;");
-      event.preventDefault();
-    }
-  });
-  body.addEventListener("paste", (event)=> {
-    // Paste takes a slight bit to modify the DOM, if I trigger
-    // the wiring without waiting a pasted button might not be wired
-    // properly.
-    setTimeout(() => {
-      wireEverything(); 
-    }, 100);
-  });
+      let node;
+  
+      for (let button of buttons) {
+        // This can be sped up by reversing the indexing
+        if (button.text.includes(`${selectedText}`)) {
+          node = document.createElement(button.el);
+          node.onmousedown = button.action;
+          node.dataset.action = `${selectedText}`
+        }
+      }
+  
+      if (node) {
+        let div = document.createElement("div");
+        node.innerHTML = `${selectedText}`.trim();
+        div.classList.toggle("wrap");
+        node.classList.toggle("alive");
+        range.deleteContents();
+        div.appendChild(node);
+        range.insertNode(div);
+        div.insertAdjacentHTML("beforebegin", "&thinsp;");
+        div.insertAdjacentHTML("afterend", "&thinsp;");
+        event.preventDefault();
+      }
+    });
+    body.addEventListener("paste", (event)=> {
+      // Paste takes a slight bit to modify the DOM, if I trigger
+      // the wiring without waiting a pasted button might not be wired
+      // properly.
+      setTimeout(() => {
+        wireEverything(); 
+      }, 100);
+    });
+  }  
 }
+
+hookBodies();
+
+// This is the main hook that makes buttons work
 
 // This is the stack machine for typing and Markdown things
 let keyStack = {};

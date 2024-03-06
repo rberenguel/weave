@@ -164,6 +164,7 @@ const split = {
     document.body.appendChild(div);
     hookBody(div);
     bodies = document.getElementsByClassName("body");
+    hookBodies();
   },
   description: "Add a new editing buffer",
   el: "u",
