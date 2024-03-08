@@ -4,12 +4,16 @@
     style.css
   </style>
 </head>
-<body>
+<body class="dark">
   <div id="content">
-  <div class="body" class="dark" contenteditable id="b0"></div>
+  <div class="body" contenteditable id="b0" style="height: 50%;"></div>
   <div class="code-info"></div>
   <div id="info"></div>
+  <div id="svgContainer">
+    <svg id="svgConnections"></svg>
   </div>
+  </div>
+  <input type="file" id="filePicker" accept=".json" style="display: none;"> 
   <div id="help" class="dark serif" style="display: none">
     <p style="font-size: 130%">
       This is <i class="highlight">Om</i>, a text "editor" inspired by

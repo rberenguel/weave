@@ -5,6 +5,7 @@
   --bright-orange: #c60;
   --bright-yellow: #cc6;
   --bright-red: #c00;
+  --wired-code: #2aa198;
 }
 
 body {
@@ -23,6 +24,16 @@ li {
   padding-left: 1em;
   list-style-type: "- ";
 }
+
+body {
+  background: var(--light-background);
+}
+
+#content {
+  flex-wrap: wrap;
+  display: flex;
+}
+
 .body {
   border-radius: 2px;
   line-height: 1.5;
@@ -32,7 +43,6 @@ li {
   width: 80%;
   height: 80%;
   overflow: auto;
-  background: var(--light-background);
   color: #657b83;
   resize: both;
   border: 1px solid var(--bright-orange);
@@ -43,6 +53,55 @@ li {
   max-height: 95%;
   max-width: 95%;
   margin: 0.1em;
+}
+
+.draggable-handle {
+  position: relative;
+  top: 0.5em;
+  right: -0.2em;
+  width: 6px;
+  height: 6px;
+  border-radius: 5px;
+  background-color: var(--wired-code);
+  cursor: grab;
+  z-index: 1;
+  display: inline-block;
+  user-select: none; 
+}
+
+#svgContainer {
+  width: 100%;
+  height: 100%;
+  position: fixed;
+  z-index: -1;
+  opacity: 0;
+  transition: opacity 0.3s ease-in-out;
+}
+
+#svgContainer.show {
+  opacity: 0.8;
+  display: block;
+}
+
+svg {
+  width: 100%;
+  height: 100%;
+  position: relative;
+}
+
+.connecting-line {
+  stroke: var(--wired-code); /* Default line color */
+  stroke-width: 4;  /* Adjust line thickness as needed */
+  opacity: 0.5;
+}
+
+.draggable-handle.dragover {
+  background-color: var(--bright-orange);
+}
+
+.body.folded {
+  height: 1em !important;
+  resize: horizontal;
 }
 
 .body::-webkit-scrollbar {
@@ -164,7 +223,7 @@ code.wired {
   padding-right: 0.4em;
   padding-top: 0.4em;
   padding-bottom: 0.4em;
-  border: 1px solid #2aa198;
+  border: 1px solid var(--wired-code);
   border-radius: 5px;
   white-space: pre-wrap;
   text-indent: -1em each-line;
@@ -192,8 +251,6 @@ code.error {
   max-width: 50%;
   transition: opacity 0.3s ease-in-out;
 }
-
-
 
 .code-info.show {
   opacity: 0.665;

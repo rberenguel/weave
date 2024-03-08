@@ -35,6 +35,15 @@ const wireEverything = () => {
   }
 }
 
+const addGoogFont = (fontname) => {
+  console.log(`Adding from Google Fonts: ${fontname}`)
+  const linkElement = document.createElement('link');
+  linkElement.rel = 'stylesheet';
+  linkElement.href = `https://fonts.googleapis.com/css2?family=${fontname}`;
+  document.head.appendChild(linkElement); 
+  return linkElement.href
+}
+
 function loadHash() {
   const currentHash = window.location.hash.substring(1);
   const decodedHash = decodeURIComponent(currentHash);
@@ -45,11 +54,11 @@ function loadHash() {
     for (let n = 1; n < bodiesData.length; n++) {
       const div = document.createElement("div");
       div.classList.add("body");
-      div.classList.add("dark");
+      //div.classList.add("dark");
       div.classList.add("serif");
       div.contentEditable = true;
       div.id = `b${n}`;
-      document.body.appendChild(div);
+      document.getElementById("content").appendChild(div);
     }
     config = JSON.parse(splitHash[0]);
     setConfig(config);
@@ -64,6 +73,13 @@ function loadHash() {
       body.style.width = bodyData["width"];
       body.style.height = bodyData["height"];
       body.style.fontSize = bodyData["fontSize"];
+      body.style.fontFamily = bodyData["fontFamily"];
+      if(bodyData["folded"]){
+        body.classList.add("folded");
+      }
+      if(bodyData["gfont"]){
+        addGoogFont(bodyData["gfont"]);
+      }
     }
     wireEverything();
   } else {
@@ -71,6 +87,8 @@ function loadHash() {
     for (let body of bodies) {
       body.innerHTML = decodedHash;
     }
+    console.log(document.documentElement.clientHeight/2)
+    bodies[0].style.height = `${document.documentElement.clientHeight/2}px`;
   }
 }
 
@@ -78,14 +96,9 @@ function setConfig(config) {
   console.log("Setting config to ", config);
   if (config.dark === undefined || config.dark) {
     console.log(bodies);
-    for (let body of bodies) {
-      console.log(body);
-      body.classList.add("dark");
-    }
+    document.body.classList.add("dark");
   } else {
-    for (let body of bodies) {
-      body.classList.remove("dark");
-    }
+    document.body.classList.remove("dark");
   }
   if (config.mono) {
     for (let body of bodies) {

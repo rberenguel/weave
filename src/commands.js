@@ -14,14 +14,31 @@ const mono = {
     if (common(ev)) {
       return;
     }
-    for (let body of bodies) {
-      body.classList.remove("serif");
-      body.classList.add("mono");
-    }
+    const body = document.getElementById(bodyClicks[0]);
+    body.classList.remove("serif");
+    body.classList.add("mono");
 
-    config.mono = true;
+    // TODO(me) This is still pending discussion with myself
+    //config.mono = true;
   },
   description: "Switch to a monospace font (Monoid) (stored in config)",
+  el: "u",
+};
+
+const gfont = {
+  text: ["gfont"],
+  action: (ev) => {
+    if (common(ev)) {
+      return;
+    }
+    const selection = window.getSelection() + "";
+    const fontname = selection.replace(" ", "+");
+    addGoogFont(fontname);
+    const body = document.getElementById(bodyClicks[1]);
+    body.style.fontFamily = selection;
+    body.dataset.gfont = fontname;
+  },
+  description: "Fetch a font from Google Fonts and set it on a panel",
   el: "u",
 };
 
@@ -44,16 +61,16 @@ const serif = {
     if (common(ev)) {
       return;
     }
-    for (let body of bodies) {
-      body.classList.add("serif");
-      body.classList.remove("mono");
-    }
-    // TODO(me) This should be panel-local, and in config stored per panel
-    config.mono = true;
+    const body = document.getElementById(bodyClicks[0]);
+    body.classList.add("serif");
+    body.classList.remove("mono");
+    // TODO(me) Does this really need to be stored in config at all? It's part of the saved styling after all
+    // config.mono = true;
   },
   description: "Switch to a serif font (Reforma1969) (stored in config)",
   el: "u",
 };
+
 const newDoc = {
   text: ["new"],
   action: (ev) => {
@@ -65,25 +82,34 @@ const newDoc = {
   description: "Create a new document (erasing the current one)",
   el: "u",
 };
+
 const fontup = {
-  text: ["fontup"],
+  text: ["font+", "f+"],
   action: (ev) => {
     if (common(ev)) {
       return;
     }
-    const closestBody = getClosestBodyContainer(ev.srcElement);
-    if (!closestBody) {
-      console.error(
-        "Could not find a body container for this command. That is _very_ unexpected"
-      );
-    }
-    const parentBodyId = closestBody.id;
-    const parentBody = document.getElementById(parentBodyId);
-    const fontSize = getComputedStyle(parentBody).fontSize;
+    const prevBody = document.getElementById(bodyClicks[0]);
+    const fontSize = getComputedStyle(prevBody).fontSize;
     const newFontSize = parseFloat(fontSize) + 2;
-    parentBody.style.fontSize = `${newFontSize}px`;
+    prevBody.style.fontSize = `${newFontSize}px`;
   },
   description: "Increase the document font by 2 pixels (stored in config)",
+  el: "u",
+};
+
+const fontdown = {
+  text: ["font-", "f-"],
+  action: (ev) => {
+    if (common(ev)) {
+      return;
+    }
+    const prevBody = document.getElementById(bodyClicks[0]);
+    const fontSize = getComputedStyle(prevBody).fontSize;
+    const newFontSize = parseFloat(fontSize) - 2;
+    prevBody.style.fontSize = `${newFontSize}px`;
+  },
+  description: "Decrease the document font by 2 pixels (stored in config)",
   el: "u",
 };
 
@@ -143,13 +169,106 @@ const print_ = {
   el: "u",
 };
 
-const save_ = {
+const save = {
   text: ["save", "💾"],
+  action: (ev) => {
+    // If there is no text selected, use the filename from the panel.
+    // If there is no text selected, and the panel has no filename, use om.json
+
+    const selection = window.getSelection() + "";
+    let body;
+    let filename = "om.json";
+    let selected = false;
+    if (selection.length > 0) {
+      filename = selection;
+      body = document.getElementById(bodyClicks[1]);
+    } else {
+      body = document.getElementById(bodyClicks[0]);
+      if (body.dataset.filename) {
+        filename = body.dataset.filename;
+      }
+    }
+    body.dataset.filename = filename;
+    let b = {};
+    b["data"] = body.innerHTML;
+    b["width"] = body.style.width;
+    b["height"] = body.style.height;
+    b["folded"] = body.classList.contains("folded");
+    b["fontSize"] = body.style.fontSize;
+    b["fontFamily"] = body.style.fontFamily;
+    b["gfont"] = body.dataset.gfont;
+    b["filename"] = body.dataset.filename;
+    const savedata = JSON.stringify(b);
+    console.log("Saving file")
+    const fileData = "data:application/json;base64," + btoa(encodeURIComponent(savedata));
+
+    const downloadLink = document.createElement("a");
+    downloadLink.href = fileData;
+    downloadLink.download = filename;
+    downloadLink.click();
+  },
+  description: "Save a pane to disk, you won't be choosing where though",
+  el: "u",
+};
+
+const load = {
+  text: ["load", "📂"],
+  action: (ev) => {
+    // Reverse of save. Needs a panel chosen
+
+    filePicker.click();
+  },
+  description: "Load a pane to disk, you won't be choosing where though",
+  el: "u",
+};
+
+const filePicker = document.getElementById("filePicker");
+
+filePicker.addEventListener("change", (event) => {
+  const file = event.target.files[0];
+
+  const reader = new FileReader();
+  reader.readAsText(file, "UTF-8");
+
+  reader.onload = (readerEvent) => {
+    const content = readerEvent.target.result;
+    console.log(content)
+    console.log(decodeURIComponent(content))
+    const base64Data = content.split(',')[1];
+    console.log(base64Data)
+    const decoded = decodeURIComponent(content);
+    console.log(decoded)
+    try {
+      const b = JSON.parse(decoded);
+      // TODO(me) This is now repeated when we load everything, too
+      console.log(bodyClicks);
+      const body = document.getElementById(bodyClicks[1]);
+      body.dataset.filename = file.name;
+      body.innerHTML = b["data"];
+      body.style.width = b["width"];
+      body.style.height = b["height"];
+      if(b["folded"]){
+        body.classList.add("folded");
+      }
+      body.style.fontSize = b["fontSize"];
+      body.style.fontFamily = b["fontFamily"];
+      if(b["gfont"]){
+        addGoogFont(b["gfont"]);
+      }
+      wireEverything();
+    } catch (error) {
+      console.error("Error parsing JSON data:", error);
+    }
+  };
+});
+
+const saveAll_ = {
+  text: ["saveAll"],
   action: (ev) => {
     if (common(ev)) {
       return;
     }
-    save();
+    saveAll();
     //ev.stopPropagation();
   },
   description:
@@ -183,7 +302,7 @@ const split = {
     div.classList.add("serif");
     div.contentEditable = true;
     div.id = `b${n}`;
-    document.body.appendChild(div);
+    document.getElementById("content").appendChild(div);
     hookBody(div);
     bodies = document.getElementsByClassName("body");
     hookBodies();
@@ -283,11 +402,13 @@ const wireEvalFromScratch = () => {
     wrap(code);
     code.dataset.eval_string = selectionText;
     code.hover_title = code.dataset.eval_string;
+    code.id = "c" + Date.now();
     if (error) {
       code.appendChild(document.createTextNode(selectionText));
       code.classList.add("error");
       code.hover_title = error;
       pad(code);
+      wireHandle(code);
       return code;
     }
     if (assignment) {
@@ -299,6 +420,7 @@ const wireEvalFromScratch = () => {
     }
   }
   pad(code);
+  wireHandle(code);
   return code;
 };
 
@@ -318,6 +440,45 @@ const observer = new MutationObserver((mutations) => {
     }
   });
 });
+
+const wireHandle = (code) => {
+  const handle = document.createElement("div");
+  handle.id = code.id.replace("c", "h");
+  handle.classList.add("draggable-handle");
+  handle.draggable = true;
+  code.appendChild(handle);
+  console.log("Should be there…");
+  handle.addEventListener("dragstart", (event) => {
+    console.log("draggin");
+    srcCodeBlockId = event.target.id;
+    //event.preventDefault();
+  });
+  handle.addEventListener("dragover", (event) => {
+    event.preventDefault();
+  });
+  handle.addEventListener("dragenter", (event) => {
+    // highlight potential drop target when the draggable element enters it
+    if (event.target.classList.contains("draggable-handle")) {
+      event.target.classList.add("dragover");
+    }
+  });
+  handle.addEventListener("dragleave", (event) => {
+    // reset background of potential drop target when the draggable element leaves it
+    if (event.target.classList.contains("draggable-handle")) {
+      event.target.classList.remove("dragover");
+    }
+  });
+  handle.addEventListener("drop", (event) => {
+    event.preventDefault();
+    if (event.target.classList.contains("draggable-handle")) {
+      event.target.classList.remove("dragover");
+    }
+    dstCodeBlockId = event.target.id;
+    console.log(`Dragged from ${srcCodeBlockId} to ${dstCodeBlockId}`);
+    //connectDivs(srcCodeBlockId, dstCodeBlockId);
+    connections.push({ src: srcCodeBlockId, dst: dstCodeBlockId });
+  });
+};
 
 const wireEval = (code) => {
   code.eval = (node, content) => {
@@ -345,6 +506,7 @@ const wireEval = (code) => {
     } else {
       src.appendChild(evaluation);
     }
+    wireHandle(src);
   };
 
   observer.observe(code, {
@@ -360,11 +522,22 @@ const wireEval = (code) => {
 
       codeInfo.textContent = ev.target.hover_title;
       codeInfo.classList.add("show");
+      const svg = document.getElementById("svgConnections");
+      svg.innerHTML = "";
+      for (let connection of connections) {
+        let { src, dst } = connection;
+        connectDivs(src, dst);
+      }
+      if (connections) {
+        document.getElementById("svgContainer").classList.add("show");
+      }
     }, 1000);
   });
+
   code.addEventListener("mouseout", () => {
     clearTimeout(codeInfoTimeout);
     codeInfo.classList.remove("show");
+    document.getElementById("svgContainer").classList.remove("show");
   });
 
   code.addEventListener("contextmenu", (ev) => {
@@ -389,6 +562,35 @@ const wireEval = (code) => {
   });
 };
 
+function connectDivs(div1Id, div2Id) {
+  const div1 = document.getElementById(div1Id);
+  const div2 = document.getElementById(div2Id);
+
+  const div1Rect = div1.getBoundingClientRect();
+  const div2Rect = div2.getBoundingClientRect();
+
+  const x1 = div1Rect.left - 4;
+  const y1 = div1Rect.top - 4;
+  const x2 = div2Rect.left - 4;
+  const y2 = div2Rect.top - 4;
+
+  createSVGLine(x1, y1, x2, y2);
+}
+
+function createSVGLine(x1, y1, x2, y2) {
+  const svgContainer = document.getElementById("svgConnections");
+  const svgNS = "http://www.w3.org/2000/svg";
+  const line = document.createElementNS(svgNS, "line");
+
+  line.setAttribute("x1", x1);
+  line.setAttribute("y1", y1);
+  line.setAttribute("x2", x2);
+  line.setAttribute("y2", y2);
+  line.classList.add("connecting-line");
+
+  svgContainer.appendChild(line);
+}
+
 const eval_ = {
   text: ["eval", "🧮"],
   action: (ev) => {
@@ -397,6 +599,7 @@ const eval_ = {
     }
     const code = wireEvalFromScratch();
     if (!code) {
+      console.log("Ain't code there dude");
       return;
     }
     wireEval(code);
@@ -421,28 +624,6 @@ const dark = {
   el: "u",
 };
 
-const fontdown = {
-  text: ["fontdown"],
-  action: (ev) => {
-    if (common(ev)) {
-      return;
-    }
-    const closestBody = getClosestBodyContainer(ev.srcElement);
-    if (!closestBody) {
-      console.error(
-        "Could not find a body container for this command. That is _very_ unexpected"
-      );
-    }
-    const parentBodyId = closestBody.id;
-    const parentBody = document.getElementById(parentBodyId);
-    const fontSize = getComputedStyle(parentBody).fontSize;
-    const newFontSize = parseFloat(fontSize) - 2;
-    parentBody.style.fontSize = `${newFontSize}px`;
-  },
-  description: "Decrease the document font by 2 pixels (stored in config)",
-  el: "u",
-};
-
 const buttons = [
   mono,
   serif,
@@ -451,7 +632,7 @@ const buttons = [
   newDoc,
   print_,
   dark,
-  save_,
+  saveAll_,
   bold,
   italic,
   underline,
@@ -459,7 +640,10 @@ const buttons = [
   split,
   eval_,
   close_,
-  clear
+  clear,
+  gfont,
+  save,
+  load
 ];
 let helpTable = [`<tr><td>Command</td><td>Help</td></tr>`];
 for (let button of buttons) {

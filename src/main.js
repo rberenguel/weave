@@ -12,6 +12,10 @@ const info = document.querySelector("#info");
 // I keep a stack of the last 2 bodies clicked, for printing.
 let bodyClicks = ["b0", "b0"]
 
+// For tracking drag between code blocks
+let srcCodeBlockId, dstCodeBlockId
+let connections = [];
+
 // I use this separator in many places
 const zwsr = () => document.createTextNode("\u200b");
 
@@ -38,7 +42,7 @@ helpDiv.onmousedown = (ev) => {
   document.getElementById("content").classList.remove("blur");
 };
 
-function save() {
+function saveAll() {
   let savedata = [];
   // The regex is to remove "live" buttons from saving as "live" (but dead) buttons
   // TODO(me) A nicer way to fix is that on-load I should re-live buttons. But that
@@ -53,7 +57,10 @@ function save() {
     b["data"] = body.innerHTML;
     b["width"] = body.style.width;
     b["height"] = body.style.height;
+    b["folded"] = body.classList.contains("folded");
     b["fontSize"] = body.style.fontSize;
+    b["fontFamily"] = body.style.fontFamily;
+    b["gfont"] = body.dataset.gfont;
     savedata.push(b);
   }
 
@@ -69,11 +76,30 @@ function save() {
 
 const hookBodies = () => {
   for (let body of bodies) {
-    body.addEventListener("click", (ev) => {
-      console.log(`Adding body ${body.id}`)
-      bodyClicks.unshift(body.id);
-      bodyClicks.length = 2
-    });
+    if(!body.clickAttached){
+      body.addEventListener("click", (ev) => {
+        bodyClicks.unshift(body.id);
+        bodyClicks.length = 2
+      });
+      body.clickAttached = true;
+    }
+    if(!body.dblClickAttached){
+      body.addEventListener("dblclick", (ev) => {
+        if (window.getSelection().toString().length > 0){
+          console.log("You have selected something, not folding");
+          return;
+        }
+        body.classList.toggle("folded");
+        if(body.classList.contains("folded")){
+          body.dataset.height = body.style.height;
+          body.style.height = "";
+        } else {
+          body.style.height = body.dataset.height;
+        }
+      });
+      body.dblClickAttached = true;
+    }
+    
     // TODO(me) This will only work well for desktop. Figure out an option for mobile.
     body.addEventListener("contextmenu", (event) => {
       const selectedText = window.getSelection();
@@ -132,7 +158,7 @@ const hookBody = (body) => {
   body.addEventListener("keyup", (event) => {
     const ek = event.key; // TODO ref
     if (event.ctrlKey && event.key === "s") {
-      save();
+      saveAll();
     } else {
       if (event.key !== "Control") {
         reset();

@@ -17,7 +17,7 @@ build/main_js: src/*.js
 > gsed -e '/.. load.js/ {r src/load.js' -e 'd}' build/m1 > build/m2
 > gsed -e '/.. commands.js/ {r src/commands.js' -e 'd}' build/m2 > build/main_js
 
-build/om_html: src/reforma.css
+build/om_html: src/om.html src/reforma.css src/monoid.css
 > gsed -e '/->reforma.css/ {r src/reforma.css' -e 'd}' src/om.html > build/o1
 > gsed -e '/->monoid.css/ {r src/monoid.css' -e 'd}' build/o1 > build/om_html
 
