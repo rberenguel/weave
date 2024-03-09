@@ -2,7 +2,10 @@
 
 This is **Weave**, a text "editor" inspired by [Plan9's Acme](https://en.wikipedia.org/wiki/Acme_(text_editor)).
 
-https://github.com/rberenguel/om/assets/2410938/0a03732d-6dcf-4bf4-9311-70d57d272274
+Below you can see an example of things you might do with it.
+
+https://github.com/rberenguel/weave/assets/2410938/bf6bef3c-1c37-435d-b83c-d8a3d04d7f0c
+
 
 <img src="media/light.png" width=300> <img src="media/dark.png" width=300>|
 
