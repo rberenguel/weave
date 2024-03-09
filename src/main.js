@@ -4,6 +4,15 @@
 
 // Globals that are used everywhere
 
+// Helper for inline code
+
+let $ = {
+  cel: (s) => document.createElement(s),
+  ctn: (s) => document.createTextNode(s),
+  byId: (s) => document.getElementById(s),
+  qs: (s) => document.querySelector(s),
+}
+
 // HTML elements of interest
 let bodies = document.getElementsByClassName("body");
 const helpDiv = document.querySelector("#help");
@@ -85,8 +94,9 @@ const hookBodies = () => {
     }
     if(!body.dblClickAttached){
       body.addEventListener("dblclick", (ev) => {
-        if (window.getSelection().toString().length > 0){
-          console.log("You have selected something, not folding");
+        const selection = window.getSelection().toString().replace(/\s+/g, "").length
+        if (selection.length > 0){
+          console.log(`You have selected something ('${selection}'), not folding`);
           return;
         }
         body.classList.toggle("folded");

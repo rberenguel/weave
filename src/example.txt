@@ -1,0 +1,26 @@
+Live-adding word count
+
+I paste this because typing while recording yourself sucks.
+
+wcb2 = 0
+wcb2Listener = false
+
+split eval
+
+if(!wcb2Listener){
+  $.byId("b2").addEventListener("input", 
+    ev => {
+    let count = 0;
+    const children = $.byId("b2").childNodes;
+    for(const child of children){
+        const nonEmptyWords = child.textContent.trim().split(/\s+/).filter(e=>e.length>0);
+        count += nonEmptyWords.length;
+    }
+    wcb2 = count;
+    $.byId("c1710008458399").eval();
+    // Getting the id is mildly annoying, I know.
+  });
+  wcb2Listener = true;
+}
+
+Double-click folds a panel

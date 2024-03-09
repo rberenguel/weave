@@ -1,7 +1,7 @@
 :root {
   --dark-background: #002b36;
   --light-background: #fdf6e3;
-  --gray-text:  #839496;
+  --gray-text:  #a9babc;
   --bright-orange: #c60;
   --bright-yellow: #cc6;
   --bright-red: #c00;
@@ -10,7 +10,7 @@
 
 body {
   background: var(--dark-background) !important;
-  font-size: 40px;
+  font-size: 20px;
 }
 h1,
 h2,
@@ -43,7 +43,6 @@ body {
   width: 80%;
   height: 80%;
   overflow: auto;
-  color: #657b83;
   resize: both;
   border: 1px solid var(--bright-orange);
   border-radius: 5px;
@@ -100,8 +99,10 @@ svg {
 }
 
 .body.folded {
-  height: 1em !important;
+  height: 1em;
+  min-height: 1em;
   resize: horizontal;
+  overflow: hidden;
 }
 
 .body::-webkit-scrollbar {
@@ -214,7 +215,7 @@ div.wrap {
   font-weight: 100;
 }
 
-code.wired {
+.code.wired {
   font-family: "monoidregular";
   padding-left: 0.2em;
   font-size: 60%;
@@ -226,15 +227,17 @@ code.wired {
   border: 1px solid var(--wired-code);
   border-radius: 5px;
   white-space: pre-wrap;
-  text-indent: -1em each-line;
+  overflow: visible;
+  display: inline-block; /* To accomodate multiline and single-line */
+  width: fit-content;
   font-weight: 100;
 }
 
-code.dirty {
+.code.dirty {
   border: 2px solid var(--bright-yellow) !important;
 }
 
-code.error {
+.code.error {
   border: 2px solid var(--bright-red) !important;
 }
 
@@ -244,7 +247,7 @@ code.error {
   background-color: var(--light-background);
   padding: 0.4em;
   border-radius: 5px;
-  font-size: 40%;
+  font-size: 90%;
   border: 1px solid var(--bright-orange);
   box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.2);
   opacity: 0;

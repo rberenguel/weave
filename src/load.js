@@ -12,14 +12,14 @@ function getClosestBodyContainer(element) {
 
 const wireEverything = () => {
   // We have loaded stuff. Let's wire the code blocks:
-  const codes = document.querySelectorAll("code.wired");
+  const codes = document.querySelectorAll(".code.wired");
   let i = 0;
   for (let cod of codes) {
     cod.hover_title = `[${i}] ${cod.hover_title}`;
     i++;
     console.log("data", cod.dataset.eval_string);
     wireEval(cod, cod.dataset.eval_string);
-    cod.eval(cod, cod.dataset.eval_string);
+    cod.eval();
   }
   // Now lets wire the buttons
   const aliveButtons = document.querySelectorAll("div>.alive");

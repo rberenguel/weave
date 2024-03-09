@@ -199,8 +199,9 @@ const save = {
     b["gfont"] = body.dataset.gfont;
     b["filename"] = body.dataset.filename;
     const savedata = JSON.stringify(b);
-    console.log("Saving file")
-    const fileData = "data:application/json;base64," + btoa(encodeURIComponent(savedata));
+    console.log("Saving file");
+    const fileData =
+      "data:application/json;base64," + btoa(encodeURIComponent(savedata));
 
     const downloadLink = document.createElement("a");
     downloadLink.href = fileData;
@@ -232,12 +233,12 @@ filePicker.addEventListener("change", (event) => {
 
   reader.onload = (readerEvent) => {
     const content = readerEvent.target.result;
-    console.log(content)
-    console.log(decodeURIComponent(content))
-    const base64Data = content.split(',')[1];
-    console.log(base64Data)
+    console.log(content);
+    console.log(decodeURIComponent(content));
+    const base64Data = content.split(",")[1];
+    console.log(base64Data);
     const decoded = decodeURIComponent(content);
-    console.log(decoded)
+    console.log(decoded);
     try {
       const b = JSON.parse(decoded);
       // TODO(me) This is now repeated when we load everything, too
@@ -247,12 +248,12 @@ filePicker.addEventListener("change", (event) => {
       body.innerHTML = b["data"];
       body.style.width = b["width"];
       body.style.height = b["height"];
-      if(b["folded"]){
+      if (b["folded"]) {
         body.classList.add("folded");
       }
       body.style.fontSize = b["fontSize"];
       body.style.fontFamily = b["fontFamily"];
-      if(b["gfont"]){
+      if (b["gfont"]) {
         addGoogFont(b["gfont"]);
       }
       wireEverything();
@@ -339,20 +340,27 @@ const evalExpr = (selectionText) => {
   console.log("Evaluating " + selectionText);
   try {
     const evaluation = eval?.(selectionText);
-    const matchesAssignment = selectionText.match(/(\w*)\s*=\s*(.*)/);
+    const lines = selectionText.split("\n");
+    const multiline = lines.length > 1;
     let assignment, rvalue;
-    if (matchesAssignment) {
-      const variable = matchesAssignment[1];
-      console.log("Has an equal, variable is named ", variable);
-      assignment = document.createElement("span");
-      assignment.classList.add("assignment");
-      rvalue = document.createTextNode(matchesAssignment[2]);
-      const assignmentText = document.createTextNode(`${variable}`);
-      assignment.appendChild(assignmentText);
+    if (!multiline) {
+      const matchesAssignment = selectionText.match(/(\w*)\s*=\s*(.*)/);
+      if (matchesAssignment) {
+        const variable = matchesAssignment[1];
+        console.log("Has an equal, variable is named ", variable);
+        assignment = document.createElement("span");
+        assignment.classList.add("assignment");
+        rvalue = document.createTextNode(matchesAssignment[2]);
+        const assignmentText = document.createTextNode(`${variable}`);
+        assignment.appendChild(assignmentText);
+      }
+      const text = document.createTextNode(evaluation);
+      return [assignment, rvalue, [text], null];
     }
-    const text = document.createTextNode(evaluation);
-    return [assignment, rvalue, text, null];
+    const texts = lines.map((line) => document.createTextNode(line));
+    return [assignment, rvalue, texts, null];
   } catch (error) {
+    console.log("Errored: ", error);
     return [null, null, null, error];
   }
 };
@@ -363,16 +371,22 @@ const pad = (node) => {
 };
 
 const wrap = (node) => {
-  node.insertAdjacentHTML("beforebegin", "&thinsp;");
+  // Seems to no longer be needed, when using divs?
+  //node.insertAdjacentHTML("beforebegin", "&thinsp;");
+  postfix(node);
+};
+
+const postfix = (node) => {
   node.insertAdjacentHTML("afterend", "&thinsp;");
 };
 
 const wireEvalFromScratch = () => {
   const selection = window.getSelection();
   const selectionText = selection + "";
+  console.log(`Wiring eval, first time: ${selectionText}`)
   let [assignment, rvalue, evaluation, error] = evalExpr(selectionText);
-  const code = document.createElement("code");
-  code.classList.add("wired");
+  const code = document.createElement("div");
+  code.classList.add("wired", "code");
   let range = selection.getRangeAt(0);
   // We need to skip the assignment span to get to the code block…
   // Or stay one below for no-assignments :shrug:
@@ -381,9 +395,13 @@ const wireEvalFromScratch = () => {
   const tagAssignment = parentNodeAssignment.tagName;
   const tagPlain = parentNodePlain.tagName;
   const skipAssignment =
-    tagAssignment == "CODE" && parentNodeAssignment.classList.contains("wired");
+    tagAssignment == "DIV" &&
+    parentNodeAssignment.classList.contains("wired") &&
+    parentNodeAssignment.classList.contains("code");
   const skipPlain =
-    tagPlain == "CODE" && parentNodePlain.classList.contains("wired");
+    tagPlain == "DIV" &&
+    parentNodePlain.classList.contains("wired") &&
+    parentNodePlain.classList.contains("code");
   if (skipPlain || skipAssignment) {
     // If the block is wired we skip
     console.log("Skipping already wired");
@@ -397,16 +415,14 @@ const wireEvalFromScratch = () => {
   } else {
     range.deleteContents();
     range.insertNode(code);
-    // This no-op is needed to prevent floating weirdness (beforebegin)
-    // and to allow the cursor to go to the end (afterend)
-    wrap(code);
     code.dataset.eval_string = selectionText;
+    console.log("Setting evaluation to ", code.dataset.eval_string);
     code.hover_title = code.dataset.eval_string;
     code.id = "c" + Date.now();
     if (error) {
       code.appendChild(document.createTextNode(selectionText));
       code.classList.add("error");
-      code.hover_title = error;
+      code.hover_title = error; // Beware padding with error in multiline
       pad(code);
       wireHandle(code);
       return code;
@@ -415,11 +431,26 @@ const wireEvalFromScratch = () => {
       code.appendChild(assignment);
       code.appendChild(rvalue);
       assignment.insertAdjacentHTML("afterend", " = ");
+      postfix(code);
     } else {
-      code.appendChild(evaluation);
+      if (evaluation.length == 1) {
+        // This no-op is needed to prevent floating weirdness (beforebegin)
+        // and to allow the cursor to go to the end (afterend)
+        wrap(code);
+      } else {
+        postfix(code);
+      }
+      for (let i = 0; i < evaluation.length; i++) {
+        const line = evaluation[i];
+        code.appendChild(line);
+        if (i != evaluation.length - 1) {
+          const lineBreak = document.createElement("br");
+          code.appendChild(lineBreak);
+        }
+      }
     }
   }
-  pad(code);
+  //pad(code);
   wireHandle(code);
   return code;
 };
@@ -481,13 +512,16 @@ const wireHandle = (code) => {
 };
 
 const wireEval = (code) => {
-  code.eval = (node, content) => {
-    const src = node;
+  code.eval = (content) => {
+    console.log("wiring this node: ", code)
+    const src = code;
     src.classList.remove("dirty");
     src.classList.remove("error");
-    console.log(src);
-    console.log(content);
-    src.dataset.eval_string = content;
+    if(!content){
+      content = src.dataset.eval_string
+    }
+    //src.dataset.eval_string = content; This seems unneeded?
+    console.log("Have evaluation string set to", src.dataset.eval_string);
     src.dataset.index = "[?]";
     // TODO(me) Should add the index already on construction as empty and
     // populate on iteration
@@ -504,7 +538,15 @@ const wireEval = (code) => {
       src.appendChild(rvalue);
       assignment.insertAdjacentHTML("afterend", " = ");
     } else {
-      src.appendChild(evaluation);
+      //src.appendChild(evaluation);
+      for (let i = 0; i < evaluation.length; i++) {
+        const line = evaluation[i];
+        src.appendChild(line);
+        if (i != evaluation.length - 1) {
+          const lineBreak = document.createElement("br");
+          src.appendChild(lineBreak);
+        }
+      }
     }
     wireHandle(src);
   };
@@ -515,37 +557,75 @@ const wireEval = (code) => {
     characterData: true,
   });
   console.log("Added the observer");
-  code.addEventListener("mouseover", (ev) => {
+  code.addEventListener("pointerenter", (ev) => {
     codeInfoTimeout = setTimeout(() => {
-      codeInfo.style.left = ev.clientX + 10 + "px";
-      codeInfo.style.top = ev.clientY + 10 + "px";
-
-      codeInfo.textContent = ev.target.hover_title;
-      codeInfo.classList.add("show");
-      const svg = document.getElementById("svgConnections");
-      svg.innerHTML = "";
-      for (let connection of connections) {
-        let { src, dst } = connection;
-        connectDivs(src, dst);
-      }
-      if (connections) {
-        document.getElementById("svgContainer").classList.add("show");
+      const mouseX = ev.clientX;
+      const mouseY = ev.clientY;
+      if (code.contains(ev.target)) {
+        codeInfo.style.left = mouseX + 2 + "px";
+        codeInfo.style.top = mouseY + 2 + "px";
+        codeInfo.textContent = ev.target.hover_title + `\nid: ${code.id}`;
+        codeInfo.classList.add("show");
+        code.appendChild(codeInfo);
+        const svg = document.getElementById("svgConnections");
+        svg.innerHTML = "";
+        for (let connection of connections) {
+          let { src, dst } = connection;
+          connectDivs(src, dst);
+        }
+        if (connections) {
+          document.getElementById("svgContainer").classList.add("show");
+        }
       }
     }, 1000);
   });
 
-  code.addEventListener("mouseout", () => {
+  code.addEventListener("pointerleave", () => {
     clearTimeout(codeInfoTimeout);
     codeInfo.classList.remove("show");
     document.getElementById("svgContainer").classList.remove("show");
+    content.appendChild(codeInfo);
   });
+
+  code.addEventListener("click", (ev) => {
+    console.log("Handling click")
+    const src = ev.srcElement;
+    if(src.editing){
+      return
+    }
+    src.innerText = src.dataset.eval_string
+    src.editing = true
+  })
 
   code.addEventListener("contextmenu", (ev) => {
     ev.preventDefault();
     const src = ev.srcElement;
-    const content = src.textContent;
-    ev.srcElement.eval(src, content);
-    const codes = document.querySelectorAll("code.wired");
+    src.editing = false
+    const textNodes = [];
+    let content;
+    // Having an assignment node, makes this tricky to handle. An assignment node behaves differently, since it has a span.
+    // Worse, if a single line assignment block becomes multiline… hell will break loose here too.
+    const hasAssignment = Array.from(src.childNodes).some(
+      (node) =>
+        node.nodeType === Node.ELEMENT_NODE &&
+        node.tagName === "SPAN" &&
+        node.classList.contains("assignment")
+    );
+    if (hasAssignment) {
+      content = src.innerText; // This still won't work going from single to multiple lines
+    } else {
+      for (const node of src.childNodes) {
+        if (node.nodeType === Node.TEXT_NODE) {
+          textNodes.push(node.textContent);
+        }
+      }
+      content = textNodes.join("\n");
+    }
+    console.log(`Invoking evaluation for ${src} for ${content}`);
+    src.eval(content);
+    console.log(`Updating internal evaluation string to ${content}`);
+    src.dataset.eval_string = content;
+    const codes = document.querySelectorAll(".code.wired");
     let i = 0;
     for (let cod of codes) {
       // TODO(me) This would look way better as an HTML hover
@@ -556,7 +636,7 @@ const wireEval = (code) => {
         console.log("Skipping self");
         continue;
       } else {
-        cod.eval(cod, cod.dataset.eval_string);
+        cod.eval();
       }
     }
   });
@@ -643,7 +723,7 @@ const buttons = [
   clear,
   gfont,
   save,
-  load
+  load,
 ];
 let helpTable = [`<tr><td>Command</td><td>Help</td></tr>`];
 for (let button of buttons) {

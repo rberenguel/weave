@@ -1,6 +1,6 @@
-# Om
+# Weave
 
-This is **Om**, a text "editor" inspired by [Plan9's Acme](https://en.wikipedia.org/wiki/Acme_(text_editor)).
+This is **Weave**, a text "editor" inspired by [Plan9's Acme](https://en.wikipedia.org/wiki/Acme_(text_editor)).
 
 https://github.com/rberenguel/om/assets/2410938/0a03732d-6dcf-4bf4-9311-70d57d272274
 
@@ -47,7 +47,7 @@ Ideally the whole editor would live in a bookmarklet, as a `data:text/html` URI.
 - [ ] Code cleanup, make it easier to reason about and extend, since I'm using it pretty regularly.
 - [x] ~~Inject the fonts so there is no need to pull the CSSs for mono and serif.~~
 
-### <a name='Thecommandsavailablesofararethefollowing'></a>The commands available (so far) are the following
+### <a name='Thecommandsavailablesofararethefollowing'></a>The commands available (so far) are the following **outdated**
 
 | Command     | Description                                                                    |
 |-------------|--------------------------------------------------------------------------------|
@@ -68,8 +68,12 @@ Ideally the whole editor would live in a bookmarklet, as a `data:text/html` URI.
 
 ### <a name='Name'></a>Name?
 
-_Om_ is short for _Omni_. Acme (corp and the editor too) do many things. I'd like Om to do many too, but it is short of Omni.
+This used to be named Om, short for _Omni_. Acme (corp and the editor too) do many things.
+
+After adding a bunch of features I started to not like the name that much, and changed it to
+_Weave_, because it lets you weave evaluated code with normal text, a bit like `weave` from
+Knuth's Literate Programming tool.
 
 ### <a name='Why'></a>Why?
 
-Useful to take very transient and local notes, without needing a text editor of any kind.
+Useful to take somewhat transient and local notes, without needing a text editor of any kind.
