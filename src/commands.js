@@ -90,9 +90,11 @@ const fontup = {
       return;
     }
     const prevBody = document.getElementById(bodyClicks[0]);
+    bodyClicks.unshift(bodyClicks[0]); // This is to allow resizing forever
     const fontSize = getComputedStyle(prevBody).fontSize;
     const newFontSize = parseFloat(fontSize) + 2;
     prevBody.style.fontSize = `${newFontSize}px`;
+    ev.stopPropagation();
   },
   description: "Increase the document font by 2 pixels (stored in config)",
   el: "u",
@@ -105,9 +107,12 @@ const fontdown = {
       return;
     }
     const prevBody = document.getElementById(bodyClicks[0]);
+    bodyClicks.unshift(bodyClicks[0]); // This is to allow resizing forever
+    console.log("Copied previous body")
     const fontSize = getComputedStyle(prevBody).fontSize;
     const newFontSize = parseFloat(fontSize) - 2;
     prevBody.style.fontSize = `${newFontSize}px`;
+    cancelShifting = true;
   },
   description: "Decrease the document font by 2 pixels (stored in config)",
   el: "u",
@@ -482,7 +487,6 @@ const wireHandle = (code) => {
   handle.addEventListener("dragstart", (event) => {
     console.log("draggin");
     srcCodeBlockId = event.target.id;
-    //event.preventDefault();
   });
   handle.addEventListener("dragover", (event) => {
     event.preventDefault();

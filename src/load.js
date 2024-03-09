@@ -28,8 +28,13 @@ const wireEverything = () => {
   for (let aliveButton of aliveButtons){
     for (let button of buttons) {
       // This could be sped up by reversing the indexing
+      // TODO this is repeated
       if (button.text.includes(aliveButton.dataset.action)) {
         aliveButton.onmousedown = button.action;
+        aliveButton.addEventListener("dblclick", (ev) => {
+          console.debug("Preventing folding")
+          preventFolding = true;
+        });
       }
     }
   }

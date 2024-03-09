@@ -11,7 +11,7 @@ let $ = {
   ctn: (s) => document.createTextNode(s),
   byId: (s) => document.getElementById(s),
   qs: (s) => document.querySelector(s),
-}
+};
 
 // HTML elements of interest
 let bodies = document.getElementsByClassName("body");
@@ -19,10 +19,16 @@ const helpDiv = document.querySelector("#help");
 const info = document.querySelector("#info");
 
 // I keep a stack of the last 2 bodies clicked, for printing.
-let bodyClicks = ["b0", "b0"]
+// Sometimes I want to cancel the shift. And stopPropagation/stopImmediatePropagation don't work
+// Dunno why
+
+let bodyClicks = ["b0", "b0"];
+let cancelShifting = false;
+// More issues with propagation
+let preventFolding = false;
 
 // For tracking drag between code blocks
-let srcCodeBlockId, dstCodeBlockId
+let srcCodeBlockId, dstCodeBlockId;
 let connections = [];
 
 // I use this separator in many places
@@ -85,31 +91,46 @@ function saveAll() {
 
 const hookBodies = () => {
   for (let body of bodies) {
-    if(!body.clickAttached){
+    if (!body.clickAttached) {
       body.addEventListener("click", (ev) => {
-        bodyClicks.unshift(body.id);
-        bodyClicks.length = 2
+        if (!cancelShifting) {
+          bodyClicks.unshift(body.id);
+          bodyClicks.length = 2;
+          console.log(`Shifted previous: ${bodyClicks}`);
+        } else {
+          cancelShifting = false;
+        }
       });
       body.clickAttached = true;
     }
-    if(!body.dblClickAttached){
+    if (!body.dblClickAttached) {
       body.addEventListener("dblclick", (ev) => {
-        const selection = window.getSelection().toString().replace(/\s+/g, "").length
-        if (selection.length > 0){
-          console.log(`You have selected something ('${selection}'), not folding`);
+        const selection = window
+          .getSelection()
+          .toString()
+          .replace(/\s+/g, "").length;
+        if (selection.length > 0) {
+          console.log(
+            `You have selected something ('${selection}'), not folding`
+          );
           return;
-        }
-        body.classList.toggle("folded");
-        if(body.classList.contains("folded")){
-          body.dataset.height = body.style.height;
-          body.style.height = "";
         } else {
-          body.style.height = body.dataset.height;
+          if (!preventFolding) {
+            body.classList.toggle("folded");
+            if (body.classList.contains("folded")) {
+              body.dataset.height = body.style.height;
+              body.style.height = "";
+            } else {
+              body.style.height = body.dataset.height;
+            }
+          } else {
+            preventFolding = false;
+          }
         }
       });
       body.dblClickAttached = true;
     }
-    
+
     // TODO(me) This will only work well for desktop. Figure out an option for mobile.
     body.addEventListener("contextmenu", (event) => {
       const selectedText = window.getSelection();
@@ -121,16 +142,20 @@ const hookBodies = () => {
         return;
       }
       let node;
-  
+
       for (let button of buttons) {
         // This can be sped up by reversing the indexing
         if (button.text.includes(`${selectedText}`)) {
           node = document.createElement(button.el);
           node.onmousedown = button.action;
-          node.dataset.action = `${selectedText}`
+          node.addEventListener("dblclick", (ev) => {
+            console.log("Preventing folding")
+            preventFolding = true;
+          });
+          node.dataset.action = `${selectedText}`;
         }
       }
-  
+
       if (node) {
         let div = document.createElement("div");
         node.innerHTML = `${selectedText}`.trim();
@@ -144,16 +169,16 @@ const hookBodies = () => {
         event.preventDefault();
       }
     });
-    body.addEventListener("paste", (event)=> {
+    body.addEventListener("paste", (event) => {
       // Paste takes a slight bit to modify the DOM, if I trigger
       // the wiring without waiting a pasted button might not be wired
       // properly.
       setTimeout(() => {
-        wireEverything(); 
+        wireEverything();
       }, 100);
     });
-  }  
-}
+  }
+};
 
 hookBodies();
 
