@@ -1,9 +1,12 @@
-function reset() {
+export { reset, common, buttons }
+
+
+const reset = () => {
   info.classList.remove("fades");
   info.innerText = "";
 }
 
-function common(ev) {
+const common = (ev) => {
   reset();
   return ev.button !== 0;
 }
@@ -729,6 +732,7 @@ const buttons = [
   save,
   load,
 ];
+
 let helpTable = [`<tr><td>Command</td><td>Help</td></tr>`];
 for (let button of buttons) {
   const commandText = button.text.join("/");

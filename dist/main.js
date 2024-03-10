@@ -1,7 +1,6 @@
-// highlight.js
+import { reset, buttons } from "./commands.js"
 
-// commands.js
-
+import { wireEverything, loadHash } from "./load.js"
 // Globals that are used everywhere
 
 // Helper for inline code
@@ -41,10 +40,8 @@ let config = {
   fontsize: getComputedStyle(document.body).fontSize,
 };
 
-// load.js
-
 // Initialise data from the URL string
-loadHash();
+loadHash(config, bodies);
 
 // Refresh the list of bodies
 bodies = document.getElementsByClassName("body");

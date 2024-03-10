@@ -1,4 +1,12 @@
-function getClosestBodyContainer(element) {
+export {
+  getClosestBodyContainer,
+  wireEverything,
+  addGoogFont,
+  setConfig,
+  loadHash
+}
+
+const getClosestBodyContainer = (element) => {
   let currentParent = element.parentNode;
   while (currentParent !== document.documentElement) {
     if(currentParent.classList.contains("body") && currentParent.id.startsWith("b")){
@@ -49,11 +57,12 @@ const addGoogFont = (fontname) => {
   return linkElement.href
 }
 
-function loadHash() {
+const loadHash = (config, bodies) => {
+  console.info("Loading for")
+  console.debug(bodies)
   const currentHash = window.location.hash.substring(1);
   const decodedHash = decodeURIComponent(currentHash);
   const splitHash = decodedHash.split("\u2223");
-
   if (splitHash.length > 1) {
     let bodiesData = JSON.parse(splitHash[1]);
     for (let n = 1; n < bodiesData.length; n++) {
@@ -66,7 +75,7 @@ function loadHash() {
       document.getElementById("content").appendChild(div);
     }
     config = JSON.parse(splitHash[0]);
-    setConfig(config);
+    setConfig(config, bodies);
 
     for (let id in bodiesData) {
       console.log(id);
@@ -88,7 +97,7 @@ function loadHash() {
     }
     wireEverything();
   } else {
-    setConfig({});
+    setConfig({}, bodies);
     for (let body of bodies) {
       body.innerHTML = decodedHash;
     }
@@ -97,10 +106,9 @@ function loadHash() {
   }
 }
 
-function setConfig(config) {
+const setConfig = (config, bodies) => {
   console.log("Setting config to ", config);
   if (config.dark === undefined || config.dark) {
-    console.log(bodies);
     document.body.classList.add("dark");
   } else {
     document.body.classList.remove("dark");
@@ -115,5 +123,4 @@ function setConfig(config) {
     }
   }
   document.body.style.fontSize = `${config.fontsize}px`;
-  //body.style.width = `${config.width}px`;
 }
