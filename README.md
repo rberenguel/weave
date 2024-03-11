@@ -1,6 +1,6 @@
 # Weave
 
-> [!ALERT]
+> [!CAUTION]
 > I'm leaving it in a partially broken state because I want to test some funcionality
 
 This is **Weave**, a text "editor" inspired by [Plan9's Acme](https://en.wikipedia.org/wiki/Acme_(text_editor)).
