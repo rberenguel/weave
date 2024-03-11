@@ -1,6 +1,9 @@
-import { reset, buttons } from "./commands.js"
+import { reset, buttons, createPanel } from "./commands.js"
 
-import { wireEverything, loadHash } from "./load.js"
+import { loadHash } from "./load.js"
+
+import weave from "./weave.js"
+
 // Globals that are used everywhere
 
 // Helper for inline code
@@ -12,8 +15,10 @@ let $ = {
   qs: (s) => document.querySelector(s),
 };
 
+createPanel("b0")
+
 // HTML elements of interest
-let bodies = document.getElementsByClassName("body");
+//const bodies = () => document.getElementsByClassName("body");
 const helpDiv = document.querySelector("#help");
 const info = document.querySelector("#info");
 
@@ -21,8 +26,6 @@ const info = document.querySelector("#info");
 // Sometimes I want to cancel the shift. And stopPropagation/stopImmediatePropagation don't work
 // Dunno why
 
-let bodyClicks = ["b0", "b0"];
-let cancelShifting = false;
 // More issues with propagation
 let preventFolding = false;
 
@@ -41,10 +44,10 @@ let config = {
 };
 
 // Initialise data from the URL string
-loadHash(config, bodies);
+loadHash(config, weave.bodies());
 
 // Refresh the list of bodies
-bodies = document.getElementsByClassName("body");
+//bodies = document.getElementsByClassName("body");
 
 helpDiv.onmousedown = (ev) => {
   if (ev.button !== 0) {
@@ -61,18 +64,25 @@ function saveAll() {
   // was a bit annoying for a first iteration.
   //const regex =
   //  /<div class="wrap"><[^\s]+ class="alive">\s*([^\s]+)\s*<\/[^>]+><\/div>/g;
-  for (let body of bodies) {
+  for (let body of weave.bodies()) {
     //const streamlined = body.innerHTML
     //  .replaceAll(regex, "$1")
     //  .replaceAll("\u2009", "");
     let b = {};
-    b["data"] = body.innerHTML;
+    let contents
+    if(body.dataset.filename && body.dataset.filename.includes("menu")){
+      contents = body.innerHTML
+    } else {
+      contents = body.dataset.filename || ""
+    }
+    b["data"] = contents;
     b["width"] = body.style.width;
     b["height"] = body.style.height;
     b["folded"] = body.classList.contains("folded");
     b["fontSize"] = body.style.fontSize;
     b["fontFamily"] = body.style.fontFamily;
     b["gfont"] = body.dataset.gfont;
+    b["filename"] = body.dataset.filename;
     savedata.push(b);
   }
 
@@ -86,98 +96,8 @@ function saveAll() {
   info.classList.add("fades");
 }
 
-const hookBodies = () => {
-  for (let body of bodies) {
-    if (!body.clickAttached) {
-      body.addEventListener("click", (ev) => {
-        if (!cancelShifting) {
-          bodyClicks.unshift(body.id);
-          bodyClicks.length = 2;
-          console.log(`Shifted previous: ${bodyClicks}`);
-        } else {
-          cancelShifting = false;
-        }
-      });
-      body.clickAttached = true;
-    }
-    if (!body.dblClickAttached) {
-      body.addEventListener("dblclick", (ev) => {
-        const selection = window
-          .getSelection()
-          .toString()
-          .replace(/\s+/g, "").length;
-        if (selection.length > 0) {
-          console.log(
-            `You have selected something ('${selection}'), not folding`
-          );
-          return;
-        } else {
-          if (!preventFolding) {
-            body.classList.toggle("folded");
-            if (body.classList.contains("folded")) {
-              body.dataset.height = body.style.height;
-              body.style.height = "";
-            } else {
-              body.style.height = body.dataset.height;
-            }
-          } else {
-            preventFolding = false;
-          }
-        }
-      });
-      body.dblClickAttached = true;
-    }
 
-    // TODO(me) This will only work well for desktop. Figure out an option for mobile.
-    body.addEventListener("contextmenu", (event) => {
-      const selectedText = window.getSelection();
-      const range = selectedText.getRangeAt(0);
-      if (
-        event.srcElement.classList.length > 0 &&
-        event.srcElement.classList.contains("alive")
-      ) {
-        return;
-      }
-      let node;
-
-      for (let button of buttons) {
-        // This can be sped up by reversing the indexing
-        if (button.text.includes(`${selectedText}`)) {
-          node = document.createElement(button.el);
-          node.onmousedown = button.action;
-          node.addEventListener("dblclick", (ev) => {
-            console.log("Preventing folding")
-            preventFolding = true;
-          });
-          node.dataset.action = `${selectedText}`;
-        }
-      }
-
-      if (node) {
-        let div = document.createElement("div");
-        node.innerHTML = `${selectedText}`.trim();
-        div.classList.toggle("wrap");
-        node.classList.toggle("alive");
-        range.deleteContents();
-        div.appendChild(node);
-        range.insertNode(div);
-        div.insertAdjacentHTML("beforebegin", "&thinsp;");
-        div.insertAdjacentHTML("afterend", "&thinsp;");
-        event.preventDefault();
-      }
-    });
-    body.addEventListener("paste", (event) => {
-      // Paste takes a slight bit to modify the DOM, if I trigger
-      // the wiring without waiting a pasted button might not be wired
-      // properly.
-      setTimeout(() => {
-        wireEverything();
-      }, 100);
-    });
-  }
-};
-
-hookBodies();
+//hookBodies();
 
 // This is the main hook that makes buttons work
 
@@ -343,6 +263,6 @@ const hookBody = (body) => {
   });
 };
 
-for (let body of bodies) {
+for (let body of weave.bodies()) {
   hookBody(body);
 }

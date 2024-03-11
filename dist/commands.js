@@ -1,5 +1,7 @@
-export { reset, common, buttons }
+export { reset, common, buttons, createPanel }
 
+import weave from "./weave.js"
+import { createPanel } from "./doms.js"
 
 const reset = () => {
   info.classList.remove("fades");
@@ -17,7 +19,7 @@ const mono = {
     if (common(ev)) {
       return;
     }
-    const body = document.getElementById(bodyClicks[0]);
+    const body = document.getElementById(weave.bodyClicks[0]);
     body.classList.remove("serif");
     body.classList.add("mono");
 
@@ -37,7 +39,7 @@ const gfont = {
     const selection = window.getSelection() + "";
     const fontname = selection.replace(" ", "+");
     addGoogFont(fontname);
-    const body = document.getElementById(bodyClicks[1]);
+    const body = document.getElementById(weave.bodyClicks[1]);
     body.style.fontFamily = selection;
     body.dataset.gfont = fontname;
   },
@@ -64,7 +66,7 @@ const serif = {
     if (common(ev)) {
       return;
     }
-    const body = document.getElementById(bodyClicks[0]);
+    const body = document.getElementById(weave.bodyClicks[0]);
     body.classList.add("serif");
     body.classList.remove("mono");
     // TODO(me) Does this really need to be stored in config at all? It's part of the saved styling after all
@@ -92,8 +94,8 @@ const fontup = {
     if (common(ev)) {
       return;
     }
-    const prevBody = document.getElementById(bodyClicks[0]);
-    bodyClicks.unshift(bodyClicks[0]); // This is to allow resizing forever
+    const prevBody = document.getElementById(weave.bodyClicks[0]);
+    weave.bodyClicks.unshift(weave.bodyClicks[0]); // This is to allow resizing forever
     const fontSize = getComputedStyle(prevBody).fontSize;
     const newFontSize = parseFloat(fontSize) + 2;
     prevBody.style.fontSize = `${newFontSize}px`;
@@ -109,13 +111,13 @@ const fontdown = {
     if (common(ev)) {
       return;
     }
-    const prevBody = document.getElementById(bodyClicks[0]);
-    bodyClicks.unshift(bodyClicks[0]); // This is to allow resizing forever
+    const prevBody = document.getElementById(weave.bodyClicks[0]);
+    weave.bodyClicks.unshift(weave.bodyClicks[0]); // This is to allow resizing forever
     console.log("Copied previous body")
     const fontSize = getComputedStyle(prevBody).fontSize;
     const newFontSize = parseFloat(fontSize) - 2;
     prevBody.style.fontSize = `${newFontSize}px`;
-    cancelShifting = true;
+    weave._cancelShifting = true;
   },
   description: "Decrease the document font by 2 pixels (stored in config)",
   el: "u",
@@ -144,7 +146,7 @@ const close_ = {
     }
     // TODO(me) I'm pretty sure closing-saving-loading would fail
     // if I delete an intermediate panel, needs a "test"
-    const divToRemove = document.getElementById(bodyClicks[0]);
+    const divToRemove = document.getElementById(weave.bodyClicks[0]);
     const parentElement = divToRemove.parentNode;
     parentElement.removeChild(divToRemove);
   },
@@ -158,7 +160,7 @@ const clear = {
     if (common(ev)) {
       return;
     }
-    const divToClear = document.getElementById(bodyClicks[0]);
+    const divToClear = document.getElementById(weave.bodyClicks[0]);
     divToClear.innerHTML = "";
   },
   description: "Fully eliminate content of a panel",
@@ -171,9 +173,23 @@ const print_ = {
     if (common(ev)) {
       return;
     }
-    printDiv(bodyClicks[0]);
+    printDiv(weave.bodyClicks[0]);
   },
   description: "Trigger the print dialog",
+  el: "u",
+};
+
+const title = {
+  text: ["title"],
+  action: (ev) => {
+    if (common(ev)) {
+      return;
+    }
+    const selection = window.getSelection() + "";
+    const body = document.getElementById(weave.bodyClicks[1]);
+    body.dataset.filename = selection;
+  },
+  description: "Sets the title of this pane. Useful to store menus in the URL",
   el: "u",
 };
 
@@ -189,9 +205,9 @@ const save = {
     let selected = false;
     if (selection.length > 0) {
       filename = selection;
-      body = document.getElementById(bodyClicks[1]);
+      body = document.getElementById(weave.bodyClicks[1]);
     } else {
-      body = document.getElementById(bodyClicks[0]);
+      body = document.getElementById(weave.bodyClicks[0]);
       if (body.dataset.filename) {
         filename = body.dataset.filename;
       }
@@ -250,8 +266,8 @@ filePicker.addEventListener("change", (event) => {
     try {
       const b = JSON.parse(decoded);
       // TODO(me) This is now repeated when we load everything, too
-      console.log(bodyClicks);
-      const body = document.getElementById(bodyClicks[1]);
+      console.log(weave.bodyClicks);
+      const body = document.getElementById(weave.bodyClicks[1]);
       body.dataset.filename = file.name;
       body.innerHTML = b["data"];
       body.style.width = b["width"];
@@ -264,7 +280,7 @@ filePicker.addEventListener("change", (event) => {
       if (b["gfont"]) {
         addGoogFont(b["gfont"]);
       }
-      wireEverything();
+      wireEverything(weave.buttons());
     } catch (error) {
       console.error("Error parsing JSON data:", error);
     }
@@ -303,18 +319,10 @@ const split = {
     if (common(ev)) {
       return;
     }
+    const n = weave.bodies().length;
+    const id = `b${n}`
     // This is now repeated!
-    n = bodies.length;
-    const div = document.createElement("div");
-    div.classList.add("body");
-    div.classList.add("dark");
-    div.classList.add("serif");
-    div.contentEditable = true;
-    div.id = `b${n}`;
-    document.getElementById("content").appendChild(div);
-    hookBody(div);
-    bodies = document.getElementsByClassName("body");
-    hookBodies();
+    createPanel(id, weave.buttons())
   },
   description: "Add a new editing buffer",
   el: "u",
@@ -701,7 +709,7 @@ const dark = {
     if (common(ev)) {
       return;
     }
-    for (let body of bodies) {
+    for (let body of bodies()) {
       body.classList.toggle("dark");
     }
 
@@ -731,7 +739,10 @@ const buttons = [
   gfont,
   save,
   load,
+  title,
 ];
+
+weave.buttons = () => buttons;
 
 let helpTable = [`<tr><td>Command</td><td>Help</td></tr>`];
 for (let button of buttons) {

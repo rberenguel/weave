@@ -6,6 +6,9 @@ export {
   loadHash
 }
 
+import weave from "./weave.js"
+import { createPanel } from "./doms.js";
+
 const getClosestBodyContainer = (element) => {
   let currentParent = element.parentNode;
   while (currentParent !== document.documentElement) {
@@ -18,7 +21,7 @@ const getClosestBodyContainer = (element) => {
   return null;
 }
 
-const wireEverything = () => {
+const wireEverything = (buttons) => {
   // We have loaded stuff. Let's wire the code blocks:
   const codes = document.querySelectorAll(".code.wired");
   let i = 0;
@@ -66,16 +69,10 @@ const loadHash = (config, bodies) => {
   if (splitHash.length > 1) {
     let bodiesData = JSON.parse(splitHash[1]);
     for (let n = 1; n < bodiesData.length; n++) {
-      const div = document.createElement("div");
-      div.classList.add("body");
-      //div.classList.add("dark");
-      div.classList.add("serif");
-      div.contentEditable = true;
-      div.id = `b${n}`;
-      document.getElementById("content").appendChild(div);
+      createPanel(`b${n}`, weave.buttons());
     }
     config = JSON.parse(splitHash[0]);
-    setConfig(config, bodies);
+    setConfig(config);
 
     for (let id in bodiesData) {
       console.log(id);
@@ -88,6 +85,7 @@ const loadHash = (config, bodies) => {
       body.style.height = bodyData["height"];
       body.style.fontSize = bodyData["fontSize"];
       body.style.fontFamily = bodyData["fontFamily"];
+      body.dataset.filename = bodyData["filename"];
       if(bodyData["folded"]){
         body.classList.add("folded");
       }
@@ -95,10 +93,10 @@ const loadHash = (config, bodies) => {
         addGoogFont(bodyData["gfont"]);
       }
     }
-    wireEverything();
+    wireEverything(weave.buttons());
   } else {
-    setConfig({}, bodies);
-    for (let body of bodies) {
+    setConfig({});
+    for (let body of weave.bodies()) {
       body.innerHTML = decodedHash;
     }
     console.log(document.documentElement.clientHeight/2)
@@ -106,7 +104,7 @@ const loadHash = (config, bodies) => {
   }
 }
 
-const setConfig = (config, bodies) => {
+const setConfig = (config) => {
   console.log("Setting config to ", config);
   if (config.dark === undefined || config.dark) {
     document.body.classList.add("dark");
@@ -114,11 +112,11 @@ const setConfig = (config, bodies) => {
     document.body.classList.remove("dark");
   }
   if (config.mono) {
-    for (let body of bodies) {
+    for (let body of weave.bodies()) {
       body.classList.add("mono");
     }
   } else {
-    for (let body of bodies) {
+    for (let body of weave.bodies()) {
       body.classList.add("serif");
     }
   }

@@ -35,6 +35,10 @@ body {
 }
 
 .body {
+
+}
+
+.body-container {
   border-radius: 2px;
   line-height: 1.5;
   font-weight: 100;
@@ -54,6 +58,28 @@ body {
   margin: 0.1em;
 }
 
+.body-container-dnd-placeholder {
+  border-radius: 2px;
+  line-height: 1.5;
+  font-weight: 100;
+  padding: 1%;
+  caret-color: green;
+  width: 80%;
+  height: 80%;
+  overflow: auto;
+  resize: both;
+  border: 1px solid var(--bright-yellow);
+  border-radius: 5px;
+  float: inline-start;
+  min-width: fit-content;
+  min-height: fit-content;
+  max-height: 95%;
+  max-width: 95%;
+  margin: 0.1em;
+}
+
+/* For code blocks' linking */
+
 .draggable-handle {
   position: relative;
   top: 0.5em;
@@ -62,6 +88,24 @@ body {
   height: 6px;
   border-radius: 5px;
   background-color: var(--wired-code);
+  cursor: grab;
+  z-index: 1;
+  display: inline-block;
+  user-select: none; 
+}
+
+/* For panels */
+.dragging {
+  opacity: 0.5; 
+}
+.handle {
+  position: relative;
+  left: 98%;
+  top: 0.5em;
+  width: 6px;
+  height: 6px;
+  border-radius: 5px;
+  background-color: var(--bright-orange);
   cursor: grab;
   z-index: 1;
   display: inline-block;
