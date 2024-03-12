@@ -227,8 +227,9 @@ hr {
   transition: opacity 1s ease-in-out;
 }
 .alive {
-  border-radius: 6px;
-  background: #eee;
+color: var(--dark-background); 
+border-radius: 6px;
+  background: var(--light-background);
   padding-left: 0.3em;
   padding-right: 0.3em;
   font-family: "monoidregular";
@@ -286,6 +287,7 @@ div.wrap {
 }
 
 .code-info {
+  color: var(--dark-background);
   font-family: "monoidregular";
   position: absolute;
   background-color: var(--light-background);

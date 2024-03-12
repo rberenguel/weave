@@ -2,10 +2,20 @@ export { eval_ }
 
 import { reset, common } from "./commands_base.js"
 
+import weave from "./weave.js"
+
+
+// Allow access to a common context for accessing the internals.
+// I may make this more extensive, for interesting "libraries"
+function contextualEval(code, data){
+  const evaluation = eval(code)
+  return evaluation
+}
+
 const evalExpr = (selectionText) => {
   console.log("Evaluating " + selectionText);
   try {
-    const evaluation = eval?.(selectionText);
+    const evaluation = contextualEval(selectionText, {weave: weave});  //eval?.(selectionText);
     const lines = selectionText.split("\n");
     const multiline = lines.length > 1;
     let assignment, rvalue;
@@ -222,7 +232,30 @@ const wireEval = (code) => {
     characterData: true,
   });
   console.log("Added the observer");
-  code.addEventListener("pointerenter", (ev) => {
+  // Note that I might not need everything in code here
+  code.addEventListener("pointerenter", infoOnHover(code));
+
+  code.addEventListener("pointerleave", () => {
+    clearTimeout(codeInfoTimeout);
+    codeInfo.classList.remove("show");
+    document.getElementById("svgContainer").classList.remove("show");
+    content.appendChild(codeInfo);
+  });
+
+  code.addEventListener("click", (ev) => {
+    console.log("Handling click")
+    const src = ev.srcElement;
+    if(src.editing){
+      return
+    }
+    src.innerText = src.dataset.eval_string
+    src.editing = true
+  })
+
+  code.addEventListener("contextmenu", reevaluate);
+};
+
+const infoOnHover = (code) => (ev) => {
     codeInfoTimeout = setTimeout(() => {
       const mouseX = ev.clientX;
       const mouseY = ev.clientY;
@@ -243,26 +276,9 @@ const wireEval = (code) => {
         }
       }
     }, 1000);
-  });
+  }
 
-  code.addEventListener("pointerleave", () => {
-    clearTimeout(codeInfoTimeout);
-    codeInfo.classList.remove("show");
-    document.getElementById("svgContainer").classList.remove("show");
-    content.appendChild(codeInfo);
-  });
-
-  code.addEventListener("click", (ev) => {
-    console.log("Handling click")
-    const src = ev.srcElement;
-    if(src.editing){
-      return
-    }
-    src.innerText = src.dataset.eval_string
-    src.editing = true
-  })
-
-  code.addEventListener("contextmenu", (ev) => {
+const reevaluate = (ev) => {
     ev.preventDefault();
     const src = ev.srcElement;
     src.editing = false
@@ -304,8 +320,7 @@ const wireEval = (code) => {
         cod.eval();
       }
     }
-  });
-};
+  }
 
 function connectDivs(div1Id, div2Id) {
   const div1 = document.getElementById(div1Id);
