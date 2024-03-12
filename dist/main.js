@@ -1,7 +1,9 @@
-import { reset, buttons, createPanel } from "./commands.js"
 
+import { reset, common } from "./commands_base.js"
 import { loadHash } from "./load.js"
 
+import { createPanel } from "./commands.js"
+// Can't import from dom due to circular dependency?
 import weave from "./weave.js"
 
 // Globals that are used everywhere
@@ -15,7 +17,7 @@ let $ = {
   qs: (s) => document.querySelector(s),
 };
 
-createPanel("b0")
+createPanel("b0", weave.buttons())
 
 // HTML elements of interest
 //const bodies = () => document.getElementsByClassName("body");
