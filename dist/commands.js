@@ -1,11 +1,33 @@
-export { buttons, createPanel }
+export { buttons, createPanel };
 
-import weave from "./weave.js"
-import { createPanel } from "./doms.js"
-import { reset, common } from "./commands_base.js"
+import weave from "./weave.js";
+import { createPanel, postfix, divWithDraggableHandle } from "./doms.js";
+import { common } from "./commands_base.js";
+import { saveAll_, save } from "./save.js";
 
+import { id, eval_, sql } from "./code.js";
 
-import { eval_ } from "./code.js"
+import { addListeners } from "./dragging.js";
+
+const div = {
+  text: ["div"],
+  action: (ev) => {
+    const selection = window.getSelection();
+    const container = document.createElement("div");
+    container.appendChild(selection.getRangeAt(0).cloneContents());
+    const selectedHTML = container.innerHTML + "";
+    console.log(`Wiring div`);
+    let range = selection.getRangeAt(0);
+    const [div, handle] = divWithDraggableHandle();
+    div.classList.add("dynamic-div");
+    div.innerHTML = selectedHTML; // TODO(me) This nukes the handle
+    handle.classList.add("dynamic-handle");
+    range.deleteContents();
+    range.insertNode(div);
+    postfix(div);
+    addListeners(handle, div, "dynamic-div");
+  },
+};
 
 const mono = {
   text: ["mono"],
@@ -13,7 +35,7 @@ const mono = {
     if (common(ev)) {
       return;
     }
-    const body = document.getElementById(weave.bodyClicks[0]);
+    const body = document.getElementById(weave.internal.bodyClicks[0]);
     body.classList.remove("serif");
     body.classList.add("mono");
 
@@ -33,13 +55,23 @@ const gfont = {
     const selection = window.getSelection() + "";
     const fontname = selection.replace(" ", "+");
     addGoogFont(fontname);
-    const body = document.getElementById(weave.bodyClicks[1]);
+    const body = document.getElementById(weave.internal.bodyClicks[1]);
     body.style.fontFamily = selection;
     body.dataset.gfont = fontname;
   },
   description: "Fetch a font from Google Fonts and set it on a panel",
   el: "u",
 };
+
+const helpDiv = document.querySelector("#help");
+
+helpDiv.addEventListener("mousedown", (ev) => {
+  if (ev.button !== 0) {
+    return;
+  }
+  helpDiv.style.display = "none";
+  document.getElementById("content").classList.remove("blur");
+});
 
 const help = {
   text: ["help"],
@@ -60,7 +92,7 @@ const serif = {
     if (common(ev)) {
       return;
     }
-    const body = document.getElementById(weave.bodyClicks[0]);
+    const body = document.getElementById(weave.internal.bodyClicks[0]);
     body.classList.add("serif");
     body.classList.remove("mono");
     // TODO(me) Does this really need to be stored in config at all? It's part of the saved styling after all
@@ -88,8 +120,8 @@ const fontup = {
     if (common(ev)) {
       return;
     }
-    const prevBody = document.getElementById(weave.bodyClicks[0]);
-    weave.bodyClicks.unshift(weave.bodyClicks[0]); // This is to allow resizing forever
+    const prevBody = document.getElementById(weave.internal.bodyClicks[0]);
+    weave.internal.bodyClicks.unshift(weave.internal.bodyClicks[0]); // This is to allow resizing forever
     const fontSize = getComputedStyle(prevBody).fontSize;
     const newFontSize = parseFloat(fontSize) + 2;
     prevBody.style.fontSize = `${newFontSize}px`;
@@ -105,13 +137,13 @@ const fontdown = {
     if (common(ev)) {
       return;
     }
-    const prevBody = document.getElementById(weave.bodyClicks[0]);
-    weave.bodyClicks.unshift(weave.bodyClicks[0]); // This is to allow resizing forever
-    console.log("Copied previous body")
+    const prevBody = document.getElementById(weave.internal.bodyClicks[0]);
+    weave.internal.bodyClicks.unshift(weave.internal.bodyClicks[0]); // This is to allow resizing forever
+    console.log("Copied previous body");
     const fontSize = getComputedStyle(prevBody).fontSize;
     const newFontSize = parseFloat(fontSize) - 2;
     prevBody.style.fontSize = `${newFontSize}px`;
-    weave._cancelShifting = true;
+    weave.internal.cancelShifting = true;
   },
   description: "Decrease the document font by 2 pixels (stored in config)",
   el: "u",
@@ -140,7 +172,7 @@ const close_ = {
     }
     // TODO(me) I'm pretty sure closing-saving-loading would fail
     // if I delete an intermediate panel, needs a "test"
-    const divToRemove = document.getElementById(weave.bodyClicks[0]);
+    const divToRemove = document.getElementById(weave.internal.bodyClicks[0]);
     const parentElement = divToRemove.parentNode;
     parentElement.removeChild(divToRemove);
   },
@@ -154,7 +186,7 @@ const clear = {
     if (common(ev)) {
       return;
     }
-    const divToClear = document.getElementById(weave.bodyClicks[0]);
+    const divToClear = document.getElementById(weave.internal.bodyClicks[0]);
     divToClear.innerHTML = "";
   },
   description: "Fully eliminate content of a panel",
@@ -167,7 +199,7 @@ const print_ = {
     if (common(ev)) {
       return;
     }
-    printDiv(weave.bodyClicks[0]);
+    printDiv(weave.internal.bodyClicks[0]);
   },
   description: "Trigger the print dialog",
   el: "u",
@@ -180,53 +212,10 @@ const title = {
       return;
     }
     const selection = window.getSelection() + "";
-    const body = document.getElementById(weave.bodyClicks[1]);
+    const body = document.getElementById(weave.internal.bodyClicks[1]);
     body.dataset.filename = selection;
   },
   description: "Sets the title of this pane. Useful to store menus in the URL",
-  el: "u",
-};
-
-const save = {
-  text: ["save", "💾"],
-  action: (ev) => {
-    // If there is no text selected, use the filename from the panel.
-    // If there is no text selected, and the panel has no filename, use om.json
-
-    const selection = window.getSelection() + "";
-    let body;
-    let filename = "om.json";
-    let selected = false;
-    if (selection.length > 0) {
-      filename = selection;
-      body = document.getElementById(weave.bodyClicks[1]);
-    } else {
-      body = document.getElementById(weave.bodyClicks[0]);
-      if (body.dataset.filename) {
-        filename = body.dataset.filename;
-      }
-    }
-    body.dataset.filename = filename;
-    let b = {};
-    b["data"] = body.innerHTML;
-    b["width"] = body.style.width;
-    b["height"] = body.style.height;
-    b["folded"] = body.classList.contains("folded");
-    b["fontSize"] = body.style.fontSize;
-    b["fontFamily"] = body.style.fontFamily;
-    b["gfont"] = body.dataset.gfont;
-    b["filename"] = body.dataset.filename;
-    const savedata = JSON.stringify(b);
-    console.log("Saving file");
-    const fileData =
-      "data:application/json;base64," + btoa(encodeURIComponent(savedata));
-
-    const downloadLink = document.createElement("a");
-    downloadLink.href = fileData;
-    downloadLink.download = filename;
-    downloadLink.click();
-  },
-  description: "Save a pane to disk, you won't be choosing where though",
   el: "u",
 };
 
@@ -260,8 +249,8 @@ filePicker.addEventListener("change", (event) => {
     try {
       const b = JSON.parse(decoded);
       // TODO(me) This is now repeated when we load everything, too
-      console.log(weave.bodyClicks);
-      const body = document.getElementById(weave.bodyClicks[1]);
+      console.log(weave.internal.bodyClicks);
+      const body = document.getElementById(weave.internal.bodyClicks[1]);
       body.dataset.filename = file.name;
       body.innerHTML = b["data"];
       body.style.width = b["width"];
@@ -281,32 +270,6 @@ filePicker.addEventListener("change", (event) => {
   };
 });
 
-const saveAll_ = {
-  text: ["saveAll"],
-  action: (ev) => {
-    if (common(ev)) {
-      return;
-    }
-    saveAll();
-    //ev.stopPropagation();
-  },
-  description:
-    "Save the current changes and config in the URL, so it survives browser crashes",
-  el: "u",
-};
-// TODO: document.execCommand is deprecated. I could do the same by playing with selections and ranges.
-const italic = {
-  text: ["italic", "i"],
-  action: (ev) => {
-    if (common(ev)) {
-      return;
-    }
-    document.execCommand("italic", false, null);
-  },
-  description: "Italicize the selected text",
-  el: "i",
-};
-
 const split = {
   text: ["split"],
   action: (ev) => {
@@ -314,9 +277,9 @@ const split = {
       return;
     }
     const n = weave.bodies().length;
-    const id = `b${n}`
+    const id = `b${n}`;
     // This is now repeated!
-    createPanel(id, weave.buttons())
+    createPanel(id, weave.buttons());
   },
   description: "Add a new editing buffer",
   el: "u",
@@ -332,6 +295,19 @@ const underline = {
   },
   description: "Underline the selected text",
   el: "u",
+};
+
+// TODO: document.execCommand is deprecated. I could do the same by playing with selections and ranges.
+const italic = {
+  text: ["italic", "i"],
+  action: (ev) => {
+    if (common(ev)) {
+      return;
+    }
+    document.execCommand("italic", false, null);
+  },
+  description: "Italicize the selected text",
+  el: "i",
 };
 
 const bold = {
@@ -383,6 +359,9 @@ const buttons = [
   save,
   load,
   title,
+  div,
+  sql,
+  id,
 ];
 
 weave.buttons = () => buttons;

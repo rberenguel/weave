@@ -1,7 +1,8 @@
 :root {
   --dark-background: #002b36;
   --light-background: #fdf6e3;
-  --gray-text:  #a9babc;
+  --gray-text: #a9babc;
+  --subtly-transparent: #a9babc77;
   --bright-orange: #c60;
   --bright-yellow: #cc6;
   --bright-red: #c00;
@@ -35,7 +36,6 @@ body {
 }
 
 .body {
-
 }
 
 .body-container {
@@ -91,14 +91,43 @@ body {
   cursor: grab;
   z-index: 1;
   display: inline-block;
-  user-select: none; 
+  user-select: none;
 }
 
 /* For panels */
 .dragging {
-  opacity: 0.5; 
+  opacity: 0.5;
 }
-.handle {
+
+.dynamic-handle {
+  position: relative;
+  bottom: 0.8em;
+  left: calc(100% - 0.4em);
+  width: 6px;
+  height: 6px;
+  border-radius: 5px;
+  background-color: var(--subtly-transparent);
+  cursor: grab;
+  z-index: 1;
+  display: inline-block;
+  user-select: none;
+}
+
+.dynamic-div {
+  border: 1px solid var(--subtly-transparent);
+  border-radius: 5px;
+  /*white-space: pre-wrap;*/
+  overflow: visible;
+  display: block; /* To accomodate multiline and single-line */
+  /*width: fit-content;*/
+  max-width: 85%;
+  margin: 0.1em;
+  padding-right: 0.1em;
+  padding-top: 0.1em;
+  padding-bottom: 0.1em;
+}
+
+.panel-handle {
   position: relative;
   left: 98%;
   top: 0.5em;
@@ -109,7 +138,7 @@ body {
   cursor: grab;
   z-index: 1;
   display: inline-block;
-  user-select: none; 
+  user-select: none;
 }
 
 #svgContainer {
@@ -134,7 +163,7 @@ svg {
 
 .connecting-line {
   stroke: var(--wired-code); /* Default line color */
-  stroke-width: 4;  /* Adjust line thickness as needed */
+  stroke-width: 4; /* Adjust line thickness as needed */
   opacity: 0.5;
 }
 
@@ -182,15 +211,13 @@ svg {
 .body::-webkit-scrollbar-track {
   background-color: transparent;
 }
-
+/*
 .dark .assignment {
-  color: #859900;
 }
 
 .dark .keyword {
-  color: #859900;
 }
-
+*/
 .string {
   color: #2aa198;
 }
@@ -227,8 +254,8 @@ hr {
   transition: opacity 1s ease-in-out;
 }
 .alive {
-color: var(--dark-background); 
-border-radius: 6px;
+  color: var(--dark-background);
+  border-radius: 6px;
   background: var(--light-background);
   padding-left: 0.3em;
   padding-right: 0.3em;

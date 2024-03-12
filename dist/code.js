@@ -1,21 +1,88 @@
-export { eval_ }
+export { id, eval_, sql };
 
-import { reset, common } from "./commands_base.js"
+import { reset, common } from "./commands_base.js";
 
-import weave from "./weave.js"
+import { pad, wrap, postfix, divWithDraggableHandle } from "./doms.js";
 
+import weave from "./weave.js";
 
 // Allow access to a common context for accessing the internals.
 // I may make this more extensive, for interesting "libraries"
-function contextualEval(code, data){
-  const evaluation = eval(code)
-  return evaluation
+function contextualEval(code, data) {
+  console.log(`Evaluating in context, ${code} with context ${data}`);
+  const evaluation = eval?.(code);
+  return evaluation;
 }
 
-const evalExpr = (selectionText) => {
-  console.log("Evaluating " + selectionText);
+const evalSQL = (selectionText) => {
   try {
-    const evaluation = contextualEval(selectionText, {weave: weave});  //eval?.(selectionText);
+    const evaluation = alasql(selectionText);
+    console.log("SQL evaluation: ");
+    console.log(typeof evaluation);
+    console.log(Array.isArray(evaluation));
+    console.log(evaluation);
+    const lines = selectionText.split("\n");
+    const multiline = lines.length > 1;
+    let result;
+    // Multiline will always return an object, but the values will be integers (affected rows)
+    if (typeof evaluation !== "object" && !multiline) {
+      return [
+        null,
+        null,
+        [document.createTextNode(selectionText)],
+        null,
+        evaluation,
+      ];
+    }
+    const filtered = evaluation.filter((element) => !Number.isInteger(element));
+    if (filtered.length == 0) {
+      return [
+        null,
+        null,
+        [document.createTextNode(selectionText)],
+        null,
+        evaluation,
+      ];
+    }
+    if (Array.isArray(filtered[0])) {
+      // This case assumes we got just one result row on a multi-statement
+      result = filtered[0];
+    } else {
+      // This is that we got an array of objects, i.e. a table to process
+      result = filtered;
+    }
+    let headers = new Set();
+    for (const row of result) {
+      Object.keys(row).forEach((key) => headers.add(key));
+    }
+    headers = Array.from(headers);
+    const table = document.createElement("table");
+
+    const headerRow = table.insertRow();
+    headers.forEach((key) => {
+      const th = document.createElement("th");
+      th.textContent = key;
+      headerRow.appendChild(th);
+    });
+
+    // Data Rows
+    result.forEach((row) => {
+      const tableRow = table.insertRow();
+      headers.forEach((key) => {
+        const cell = tableRow.insertCell();
+        cell.textContent = row[key] || ""; // Handle potential missing values
+      });
+    });
+    return [null, null, [table], null, evaluation];
+  } catch (error) {
+    console.error("Evaluation (SQL) failed: ", error);
+    return [null, null, null, error, null];
+  }
+};
+
+const evalJS = (selectionText) => {
+  try {
+    const evaluation = contextualEval(selectionText, { weave: weave }); //eval?.(selectionText);
     const lines = selectionText.split("\n");
     const multiline = lines.length > 1;
     let assignment, rvalue;
@@ -30,39 +97,37 @@ const evalExpr = (selectionText) => {
         const assignmentText = document.createTextNode(`${variable}`);
         assignment.appendChild(assignmentText);
       }
-      const text = document.createTextNode(evaluation);
+      const text = document.createTextNode(JSON.stringify(evaluation));
       return [assignment, rvalue, [text], null];
     }
     const texts = lines.map((line) => document.createTextNode(line));
     return [assignment, rvalue, texts, null];
   } catch (error) {
-    console.log("Errored: ", error);
+    console.error("Evaluation (JS) failed: ", error);
     return [null, null, null, error];
   }
 };
 
-const pad = (node) => {
-  node.insertAdjacentHTML("afterbegin", "&thinsp;");
-  node.insertAdjacentHTML("beforeend", "&thinsp;");
+const evalExpr = (selectionText, kind) => {
+  console.log("Evaluating " + selectionText);
+  if (kind == "javascript") {
+    return evalJS(selectionText);
+  }
+  if (kind == "sql") {
+    return evalSQL(selectionText);
+  }
 };
 
-const wrap = (node) => {
-  // Seems to no longer be needed, when using divs?
-  //node.insertAdjacentHTML("beforebegin", "&thinsp;");
-  postfix(node);
-};
-
-const postfix = (node) => {
-  node.insertAdjacentHTML("afterend", "&thinsp;");
-};
-
-const wireEvalFromScratch = () => {
+const wireEvalFromScratch = (kind) => {
   const selection = window.getSelection();
   const selectionText = selection + "";
-  console.log(`Wiring eval, first time: ${selectionText}`)
-  let [assignment, rvalue, evaluation, error] = evalExpr(selectionText);
-  const code = document.createElement("div");
-  code.classList.add("wired", "code");
+  console.log(`Wiring eval, first time: ${selectionText}`);
+  let [assignment, rvalue, return_text, error, evaluation] = evalExpr(
+    selectionText,
+    kind
+  );
+  console.info(kind);
+  console.info(evaluation);
   let range = selection.getRangeAt(0);
   // We need to skip the assignment span to get to the code block…
   // Or stay one below for no-assignments :shrug:
@@ -78,6 +143,10 @@ const wireEvalFromScratch = () => {
     tagPlain == "DIV" &&
     parentNodePlain.classList.contains("wired") &&
     parentNodePlain.classList.contains("code");
+
+  const [code, handle] = divWithDraggableHandle();
+  handle.remove()
+  code.classList.add("wired", "code");
   if (skipPlain || skipAssignment) {
     // If the block is wired we skip
     console.log("Skipping already wired");
@@ -100,34 +169,45 @@ const wireEvalFromScratch = () => {
       code.classList.add("error");
       code.hover_title = error; // Beware padding with error in multiline
       pad(code);
-      wireHandle(code);
+      wrap(code);
       return code;
     }
+    console.info(evaluation);
+    if (kind === "sql" && evaluation) {
+      try {
+        // Assign to a helper variable
+        const foo = `${code.id} = ${JSON.stringify(evaluation)}`;
+        console.info(`Evaluating ${foo}`);
+        eval?.(foo);
+      } catch (error) {
+        console.error("Could not assign SQL to variable: ", error);
+      }
+    }
+
     if (assignment) {
       code.appendChild(assignment);
       code.appendChild(rvalue);
       assignment.insertAdjacentHTML("afterend", " = ");
       postfix(code);
     } else {
-      if (evaluation.length == 1) {
+      if (return_text.length == 1) {
         // This no-op is needed to prevent floating weirdness (beforebegin)
         // and to allow the cursor to go to the end (afterend)
         wrap(code);
       } else {
         postfix(code);
       }
-      for (let i = 0; i < evaluation.length; i++) {
-        const line = evaluation[i];
+      for (let i = 0; i < return_text.length; i++) {
+        const line = return_text[i];
         code.appendChild(line);
-        if (i != evaluation.length - 1) {
+        if (i != return_text.length - 1) {
           const lineBreak = document.createElement("br");
           code.appendChild(lineBreak);
         }
       }
     }
   }
-  //pad(code);
-  wireHandle(code);
+
   return code;
 };
 
@@ -148,60 +228,22 @@ const observer = new MutationObserver((mutations) => {
   });
 });
 
-const wireHandle = (code) => {
-  const handle = document.createElement("div");
-  handle.id = code.id.replace("c", "h");
-  handle.classList.add("draggable-handle");
-  handle.draggable = true;
-  code.appendChild(handle);
-  console.log("Should be there…");
-  handle.addEventListener("dragstart", (event) => {
-    console.log("draggin");
-    srcCodeBlockId = event.target.id;
-  });
-  handle.addEventListener("dragover", (event) => {
-    event.preventDefault();
-  });
-  handle.addEventListener("dragenter", (event) => {
-    // highlight potential drop target when the draggable element enters it
-    if (event.target.classList.contains("draggable-handle")) {
-      event.target.classList.add("dragover");
-    }
-  });
-  handle.addEventListener("dragleave", (event) => {
-    // reset background of potential drop target when the draggable element leaves it
-    if (event.target.classList.contains("draggable-handle")) {
-      event.target.classList.remove("dragover");
-    }
-  });
-  handle.addEventListener("drop", (event) => {
-    event.preventDefault();
-    if (event.target.classList.contains("draggable-handle")) {
-      event.target.classList.remove("dragover");
-    }
-    dstCodeBlockId = event.target.id;
-    console.log(`Dragged from ${srcCodeBlockId} to ${dstCodeBlockId}`);
-    //connectDivs(srcCodeBlockId, dstCodeBlockId);
-    connections.push({ src: srcCodeBlockId, dst: dstCodeBlockId });
-  });
-};
-
 const wireEval = (code) => {
   code.eval = (content) => {
-    console.log("wiring this node: ", code)
+    const kind = code.dataset.kind;
+    console.log("wiring this node: ", code);
     const src = code;
     src.classList.remove("dirty");
     src.classList.remove("error");
-    if(!content){
-      content = src.dataset.eval_string
+    if (!content) {
+      content = src.dataset.eval_string;
     }
-    //src.dataset.eval_string = content; This seems unneeded?
     console.log("Have evaluation string set to", src.dataset.eval_string);
     src.dataset.index = "[?]";
     // TODO(me) Should add the index already on construction as empty and
     // populate on iteration
     src.hover_title = src.dataset.eval_string;
-    let [assignment, rvalue, evaluation, error] = evalExpr(content);
+    let [assignment, rvalue, evaluation, error] = evalExpr(content, kind);
     if (error) {
       src.hover_title = error;
       src.classList.add("error");
@@ -213,7 +255,6 @@ const wireEval = (code) => {
       src.appendChild(rvalue);
       assignment.insertAdjacentHTML("afterend", " = ");
     } else {
-      //src.appendChild(evaluation);
       for (let i = 0; i < evaluation.length; i++) {
         const line = evaluation[i];
         src.appendChild(line);
@@ -223,7 +264,6 @@ const wireEval = (code) => {
         }
       }
     }
-    wireHandle(src);
   };
 
   observer.observe(code, {
@@ -238,118 +278,91 @@ const wireEval = (code) => {
   code.addEventListener("pointerleave", () => {
     clearTimeout(codeInfoTimeout);
     codeInfo.classList.remove("show");
-    document.getElementById("svgContainer").classList.remove("show");
     content.appendChild(codeInfo);
   });
 
   code.addEventListener("click", (ev) => {
-    console.log("Handling click")
     const src = ev.srcElement;
-    if(src.editing){
-      return
+    if (src.editing) {
+      return;
     }
-    src.innerText = src.dataset.eval_string
-    src.editing = true
-  })
+    if (src.classList.contains("wired")) {
+      // I can't do HTML here: otherwise I lose all the event handlers
+      src.oldText = src.innerText
+      src.innerText = src.dataset.eval_string;
+      src.editing = true;
+      console.info("Adding current id to stack, stack is")
+      weave.internal.clickedId.unshift(code.id);
+      weave.internal.clickedId.unshift(code.id);
+      weave.internal.clickedId.length = 2;
+      console.info(weave.internal.clickedId)
+      ev.stopPropagation();
+    } else {
+      const clickEvent = new Event("click");
+      src.closest(".wired").dispatchEvent(clickEvent);
+    }
+  });
 
   code.addEventListener("contextmenu", reevaluate);
 };
 
 const infoOnHover = (code) => (ev) => {
-    codeInfoTimeout = setTimeout(() => {
-      const mouseX = ev.clientX;
-      const mouseY = ev.clientY;
-      if (code.contains(ev.target)) {
-        codeInfo.style.left = mouseX + 2 + "px";
-        codeInfo.style.top = mouseY + 2 + "px";
-        codeInfo.textContent = ev.target.hover_title + `\nid: ${code.id}`;
-        codeInfo.classList.add("show");
-        code.appendChild(codeInfo);
-        const svg = document.getElementById("svgConnections");
-        svg.innerHTML = "";
-        for (let connection of connections) {
-          let { src, dst } = connection;
-          connectDivs(src, dst);
-        }
-        if (connections) {
-          document.getElementById("svgContainer").classList.add("show");
-        }
-      }
-    }, 1000);
-  }
+  codeInfoTimeout = setTimeout(() => {
+    const mouseX = ev.clientX;
+    const mouseY = ev.clientY;
+    if (code.contains(ev.target)) {
+      codeInfo.style.left = mouseX + 2 + "px";
+      codeInfo.style.top = mouseY + 2 + "px";
+      codeInfo.textContent = ev.target.hover_title + `\nid: ${code.id}`;
+      codeInfo.classList.add("show");
+      code.appendChild(codeInfo);
+    }
+  }, 1000);
+};
 
 const reevaluate = (ev) => {
-    ev.preventDefault();
-    const src = ev.srcElement;
-    src.editing = false
-    const textNodes = [];
-    let content;
-    // Having an assignment node, makes this tricky to handle. An assignment node behaves differently, since it has a span.
-    // Worse, if a single line assignment block becomes multiline… hell will break loose here too.
-    const hasAssignment = Array.from(src.childNodes).some(
-      (node) =>
-        node.nodeType === Node.ELEMENT_NODE &&
-        node.tagName === "SPAN" &&
-        node.classList.contains("assignment")
-    );
-    if (hasAssignment) {
-      content = src.innerText; // This still won't work going from single to multiple lines
-    } else {
-      for (const node of src.childNodes) {
-        if (node.nodeType === Node.TEXT_NODE) {
-          textNodes.push(node.textContent);
-        }
+  ev.preventDefault();
+  const src = ev.srcElement;
+  src.editing = false;
+  const textNodes = [];
+  let content;
+  // Having an assignment node, makes this tricky to handle. An assignment node behaves differently, since it has a span.
+  // Worse, if a single line assignment block becomes multiline… hell will break loose here too.
+  const hasAssignment = Array.from(src.childNodes).some(
+    (node) =>
+      node.nodeType === Node.ELEMENT_NODE &&
+      node.tagName === "SPAN" &&
+      node.classList.contains("assignment")
+  );
+  if (hasAssignment) {
+    content = src.innerText; // This still won't work going from single to multiple lines
+  } else {
+    for (const node of src.childNodes) {
+      if (node.nodeType === Node.TEXT_NODE) {
+        textNodes.push(node.textContent);
       }
-      content = textNodes.join("\n");
     }
-    console.log(`Invoking evaluation for ${src} for ${content}`);
-    src.eval(content);
-    console.log(`Updating internal evaluation string to ${content}`);
-    src.dataset.eval_string = content;
-    const codes = document.querySelectorAll(".code.wired");
-    let i = 0;
-    for (let cod of codes) {
-      // TODO(me) This would look way better as an HTML hover
-      cod.dataset.index = `[${i}]`;
-      cod.hover_title = `${cod.dataset.index} ${cod.dataset.eval_string}`;
-      i++;
-      if (cod == src) {
-        console.log("Skipping self");
-        continue;
-      } else {
-        cod.eval();
-      }
+    content = textNodes.join("\n");
+  }
+  console.log(`Invoking evaluation for ${src} for ${content}`);
+  src.eval(content);
+  console.log(`Updating internal evaluation string to ${content}`);
+  src.dataset.eval_string = content;
+  const codes = document.querySelectorAll(".code.wired");
+  let i = 0;
+  for (let cod of codes) {
+    // TODO(me) This would look way better as an HTML hover
+    cod.dataset.index = `[${i}]`;
+    cod.hover_title = `${cod.dataset.index} ${cod.dataset.eval_string}`;
+    i++;
+    if (cod == src) {
+      console.log("Skipping self");
+      continue;
+    } else {
+      cod.eval();
     }
   }
-
-function connectDivs(div1Id, div2Id) {
-  const div1 = document.getElementById(div1Id);
-  const div2 = document.getElementById(div2Id);
-
-  const div1Rect = div1.getBoundingClientRect();
-  const div2Rect = div2.getBoundingClientRect();
-
-  const x1 = div1Rect.left - 4;
-  const y1 = div1Rect.top - 4;
-  const x2 = div2Rect.left - 4;
-  const y2 = div2Rect.top - 4;
-
-  createSVGLine(x1, y1, x2, y2);
-}
-
-function createSVGLine(x1, y1, x2, y2) {
-  const svgContainer = document.getElementById("svgConnections");
-  const svgNS = "http://www.w3.org/2000/svg";
-  const line = document.createElementNS(svgNS, "line");
-
-  line.setAttribute("x1", x1);
-  line.setAttribute("y1", y1);
-  line.setAttribute("x2", x2);
-  line.setAttribute("y2", y2);
-  line.classList.add("connecting-line");
-
-  svgContainer.appendChild(line);
-}
+};
 
 const eval_ = {
   text: ["eval", "🧮"],
@@ -357,15 +370,46 @@ const eval_ = {
     if (common(ev)) {
       return;
     }
-    const code = wireEvalFromScratch();
+    const code = wireEvalFromScratch("javascript");
+    code.dataset.kind = "javascript"
     if (!code) {
-      console.log("Ain't code there dude");
       return;
     }
     wireEval(code);
   },
   description: "Evaluate (JavaScript) the selected text",
-  el: "u",
 };
 
+const sql = {
+  text: ["sql"],
+  action: (ev) => {
+    if (common(ev)) {
+      return;
+    }
+    const code = wireEvalFromScratch("sql");
+    code.dataset.kind = "sql"
+    if (!code) {
+      return;
+    }
+    wireEval(code);
+  },
+  description: "Evaluate (SQL) the selected text",
+};
 
+const id = {
+  text: ["id"],
+  action: (ev) => {
+    if (common(ev)) {
+      return;
+    }
+    navigator.clipboard
+      .writeText(weave.internal.clickedId[1]) // Fishy
+      .then(() => {
+        console.log("Id copied to clipboard");
+      })
+      .catch((err) => {
+        console.error("Failed to copy id to clipboard: ", err);
+      });
+  },
+  description: "Copy the id of a code block, div or body to the clipboard",
+};

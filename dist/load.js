@@ -3,23 +3,26 @@ export {
   wireEverything,
   addGoogFont,
   setConfig,
-  loadHash
-}
+  loadHash,
+};
 
-import weave from "./weave.js"
+import weave from "./weave.js";
 import { createPanel } from "./doms.js";
 
 const getClosestBodyContainer = (element) => {
   let currentParent = element.parentNode;
   while (currentParent !== document.documentElement) {
-    if(currentParent.classList.contains("body") && currentParent.id.startsWith("b")){
-      return currentParent
+    if (
+      currentParent.classList.contains("body") &&
+      currentParent.id.startsWith("b")
+    ) {
+      return currentParent;
     }
     currentParent = currentParent.parentNode;
   }
 
   return null;
-}
+};
 
 const wireEverything = (buttons) => {
   // We have loaded stuff. Let's wire the code blocks:
@@ -29,40 +32,42 @@ const wireEverything = (buttons) => {
     cod.hover_title = `[${i}] ${cod.hover_title}`;
     i++;
     console.log("data", cod.dataset.eval_string);
-    wireEval(cod, cod.dataset.eval_string);
+    wireEval(cod);
     cod.eval();
   }
   // Now lets wire the buttons
   const aliveButtons = document.querySelectorAll("div>.alive");
-  console.log("Wiring all these:")
-  console.log(aliveButtons)
-  for (let aliveButton of aliveButtons){
+  console.log("Wiring all these:");
+  console.log(aliveButtons);
+  for (let aliveButton of aliveButtons) {
     for (let button of buttons) {
       // This could be sped up by reversing the indexing
       // TODO this is repeated
       if (button.text.includes(aliveButton.dataset.action)) {
         aliveButton.onmousedown = button.action;
         aliveButton.addEventListener("dblclick", (ev) => {
-          console.debug("Preventing folding")
-          preventFolding = true;
+          console.debug("Preventing folding");
+          weave.internal.preventFolding = true;
         });
       }
     }
   }
-}
+};
 
 const addGoogFont = (fontname) => {
-  console.log(`Adding from Google Fonts: ${fontname}`)
-  const linkElement = document.createElement('link');
-  linkElement.rel = 'stylesheet';
+  console.log(`Adding from Google Fonts: ${fontname}`);
+  const linkElement = document.createElement("link");
+  linkElement.rel = "stylesheet";
   linkElement.href = `https://fonts.googleapis.com/css2?family=${fontname}`;
-  document.head.appendChild(linkElement); 
-  return linkElement.href
-}
+  document.head.appendChild(linkElement);
+  return linkElement.href;
+};
 
-const loadHash = (config, bodies) => {
-  console.info("Loading for")
-  console.debug(bodies)
+const loadHash = () => {
+  let config = weave.config;
+  let bodies = weave.bodies();
+  console.info("Loading for");
+  console.debug(bodies);
   const currentHash = window.location.hash.substring(1);
   const decodedHash = decodeURIComponent(currentHash);
   const splitHash = decodedHash.split("\u2223");
@@ -81,15 +86,15 @@ const loadHash = (config, bodies) => {
       let body = document.querySelector(`#b${id}`);
       body.innerHTML = bodyData["data"];
       console.log(bodyData["data"]);
-      body.style.width = bodyData["width"];
-      body.style.height = bodyData["height"];
+      body.parentElement.style.width = bodyData["width"];
+      body.parentElement.style.height = bodyData["height"];
       body.style.fontSize = bodyData["fontSize"];
       body.style.fontFamily = bodyData["fontFamily"];
       body.dataset.filename = bodyData["filename"];
-      if(bodyData["folded"]){
+      if (bodyData["folded"]) {
         body.classList.add("folded");
       }
-      if(bodyData["gfont"]){
+      if (bodyData["gfont"]) {
         addGoogFont(bodyData["gfont"]);
       }
     }
@@ -99,10 +104,10 @@ const loadHash = (config, bodies) => {
     for (let body of weave.bodies()) {
       body.innerHTML = decodedHash;
     }
-    console.log(document.documentElement.clientHeight/2)
-    bodies[0].style.height = `${document.documentElement.clientHeight/2}px`;
+    console.log(document.documentElement.clientHeight / 2);
+    bodies[0].style.height = `${document.documentElement.clientHeight / 2}px`;
   }
-}
+};
 
 const setConfig = (config) => {
   console.log("Setting config to ", config);
@@ -121,4 +126,4 @@ const setConfig = (config) => {
     }
   }
   document.body.style.fontSize = `${config.fontsize}px`;
-}
+};
