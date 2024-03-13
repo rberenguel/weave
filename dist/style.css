@@ -42,13 +42,13 @@ body {
   border-radius: 2px;
   line-height: 1.5;
   font-weight: 100;
-  padding: 1%;
+  padding: 1em;
   caret-color: green;
   width: 80%;
   height: 80%;
   overflow: auto;
-  resize: both;
   /*
+   * resize: both;
    * This does not work in iOS Safari and I might then as well use the 
    * nice-looking interactjs.io also for dragging.
    * */
@@ -60,7 +60,7 @@ body {
   max-height: 95%;
   max-width: 95%;
   margin: 0.1em;
-
+  box-sizing: border-box;
 }
 
 .body-container-dnd-placeholder {
@@ -134,8 +134,8 @@ body {
 
 .panel-handle {
   position: relative;
-  left: 98%;
-  top: 0.5em;
+  left: 100%;
+  top: -0.2em;
   width: 6px;
   height: 6px;
   border-radius: 5px;
@@ -176,10 +176,13 @@ svg {
   background-color: var(--bright-orange);
 }
 
-.body-container.folded {
-  height: 1em;
-  min-height: 1em;
-  resize: horizontal;
+.body.folded {
+  /*height: 1em;
+  min-height: 1em;*/
+  overflow: hidden;
+  display: -webkit-box;  /* Essential for line-clamp */
+  -webkit-line-clamp: 1; /* Number of lines to show */
+  -webkit-box-orient: vertical; 
   overflow: hidden;
 }
 
@@ -203,7 +206,6 @@ svg {
   background-clip: padding-box;
 }
 
-// For some reason resizer does not get properly styled, ignores width
 .body-container::-webkit-resizer {
   background-color: transparent;
   border-bottom-right-radius: 3px;

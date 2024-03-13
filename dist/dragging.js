@@ -18,39 +18,6 @@ const startDrag = (parentClass) => (event) => {
 
 // This still has too many edge cases. For example, dropping on top of the placeholder, for divs, is broken.
 
-const dragOver = (event) => {
-  event.preventDefault();
-  let placeholder = document.querySelector(".body-container-dnd-placeholder");
-  if (!placeholder) {
-    placeholder = document.createElement("div");
-    placeholder.classList.add("body-container-dnd-placeholder");
-    const bcr = draggedElement.getBoundingClientRect();
-    if (bcr.height > bcr.width) {
-      placeholder.style.height = bcr.height;
-      placeholder.style.width = "1em";
-    } else {
-      placeholder.style.width = bcr.width;
-      placeholder.style.height = "1em";
-    }
-    placeholder.addEventListener("drop", drop);
-    placeholder.addEventListener("dragover", (event) => event.preventDefault());
-  }
-
-  let target = event.target.closest(`.${currentParentClass}`);
-  if (!target) {
-    target = event.target.closest(".body");
-  }
-  if (target) {
-    console.log(target);
-    const targetRect = target.getBoundingClientRect();
-    if (event.clientY > targetRect.top + targetRect.height / 2) {
-      target.parentNode.insertBefore(placeholder, target.nextSibling);
-    } else {
-      target.parentNode.insertBefore(placeholder, target);
-    }
-  }
-};
-
 const drop = (event) => {
   event.preventDefault();
   console.log("Droppin");

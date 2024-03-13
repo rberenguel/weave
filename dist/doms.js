@@ -1,6 +1,6 @@
 export { createPanel, zwsr, pad, wrap, postfix, divWithDraggableHandle };
 import { hookBodies, hookBody } from "./internal.js";
-import { addListeners } from "./dragging.js";
+import { setupDragging } from "./betterDragging.js";
 
 // I use this separator in many places
 const zwsr = () => document.createTextNode("\u200b");
@@ -34,19 +34,42 @@ const divWithDraggableHandle = () => {
 const createPanel = (id, buttons) => {
   const bodyContainer = document.createElement("div");
   bodyContainer.classList.add("body-container");
+
+  interact(bodyContainer).resizable({
+    edges: { left: true, right: true, bottom: true, top: true },
+
+    listeners: {
+      move(event) {
+        var target = event.target;
+        var x = parseFloat(target.getAttribute("data-x")) || 0;
+        var y = parseFloat(target.getAttribute("data-y")) || 0;
+
+        target.style.width = event.rect.width + "px";
+        target.style.height = event.rect.height + "px";
+
+      },
+    },
+    modifiers: [
+      interact.modifiers.restrictSize({
+        min: { width: 100, height: 50 },
+      }),
+    ],
+    inertia: false,
+  });
+
+  const handle = document.createElement("div");
+  handle.classList.add("panel-handle");
+  bodyContainer.appendChild(handle);
+  setupDragging(bodyContainer, handle)
+
   const body = document.createElement("div");
   body.classList.add("body");
   body.classList.add("dark");
+  bodyContainer.classList.add("dark"); // TODO
   body.classList.add("serif");
   body.contentEditable = true;
   body.id = id;
-  const handle = document.createElement("div");
-  handle.classList.add("panel-handle");
-  handle.draggable = true;
-
-  bodyContainer.appendChild(handle);
   bodyContainer.appendChild(body);
-  addListeners(handle, bodyContainer, "body-container");
   document.getElementById("content").appendChild(bodyContainer);
   hookBodies(buttons); // This wires all buttons
   hookBody(body); // This wires all the keys

@@ -104,8 +104,8 @@ const loadHash = () => {
     for (let body of weave.bodies()) {
       body.innerHTML = decodedHash;
     }
-    console.log(document.documentElement.clientHeight / 2);
-    bodies[0].style.height = `${document.documentElement.clientHeight / 2}px`;
+    //console.log(document.documentElement.clientHeight / 2);
+    //bodies[0].style.height = `${document.documentElement.clientHeight / 2}px`;
   }
 };
 

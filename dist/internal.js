@@ -18,15 +18,15 @@ const hookBodies = (buttons) => {
         } else {
           weave.internal.cancelShifting = false;
         }
-        if(!ev.target.classList.contains("wired")){
-          const wired = document.getElementsByClassName("code wired")
-          console.log(wired)
+        if (!ev.target.classList.contains("wired")) {
+          const wired = document.getElementsByClassName("code wired");
+          console.log(wired);
           // Try to undo edit mode
-          for(let block of wired){
-            console.log(block)
-            if(block.editing){
-              block.editing = false
-              block.innerText = block.oldText
+          for (let block of wired) {
+            console.log(block);
+            if (block.editing) {
+              block.editing = false;
+              block.innerText = block.oldText;
             }
           }
         }
@@ -34,7 +34,7 @@ const hookBodies = (buttons) => {
       body.clickAttached = true;
     }
     if (!body.dblClickAttached) {
-      body.addEventListener("dblclick", (ev) => {
+      body.parentElement.addEventListener("dblclick", (ev) => {
         const selection = window
           .getSelection()
           .toString()
@@ -48,10 +48,12 @@ const hookBodies = (buttons) => {
           if (!weave.internal.preventFolding) {
             body.classList.toggle("folded");
             if (body.classList.contains("folded")) {
-              body.dataset.height = body.style.height;
-              body.style.height = "";
+              body.dataset.height = body.parentElement.style.height;
+              body.parentElement.style.height = "1.5em";
+              body.style.height = "1.5em";
             } else {
-              body.style.height = body.dataset.height;
+              body.parentElement.style.height = body.dataset.height;
+              body.style.height = "1.5em";
             }
           } else {
             weave.internal.preventFolding = false;
@@ -76,49 +78,50 @@ const hookBodies = (buttons) => {
 };
 
 const wireButtons = (buttons) => (event) => {
-      const selectedText = window.getSelection();
-      const range = selectedText.getRangeAt(0);
-      if (
-        event.srcElement.classList.length > 0 &&
-        event.srcElement.classList.contains("alive")
-      ) {
-        return;
-      }
-      let node, result;
+  const selectedText = window.getSelection();
+  const range = selectedText.getRangeAt(0);
+  if (
+    event.srcElement.classList.length > 0 &&
+    event.srcElement.classList.contains("alive")
+  ) {
+    return;
+  }
+  let node, result;
 
-      for (let button of buttons) {
-        if (button.text.includes(`${selectedText}`)) {
-          result = button
-          node = button.el ? document.createElement(button.el) : document.createElement("span");
-         break;
-        }
-      }
-
-      if (node) {
-        let div = document.createElement("div");
-        node.innerHTML = `${selectedText}`.trim();
-          div.contentEditable = false
-          div.addEventListener("mousedown", result.action);
-          div.addEventListener("click", (ev) => {
-            ev.preventDefault()
-            ev.stopPropagation()
-            }
-          )
-          div.addEventListener("dblclick", (ev) => {
-            console.log("Preventing folding");
-            weave.internal.preventFolding = true;
-          });
-          node.dataset.action = `${selectedText}`;
-         div.classList.toggle("wrap");
-        node.classList.toggle("alive");
-        range.deleteContents();
-        div.appendChild(node);
-        range.insertNode(div);
-        div.insertAdjacentHTML("beforebegin", "&thinsp;");
-        div.insertAdjacentHTML("afterend", "&thinsp;");
-        event.preventDefault();
-      }
+  for (let button of buttons) {
+    if (button.text.includes(`${selectedText}`)) {
+      result = button;
+      node = button.el
+        ? document.createElement(button.el)
+        : document.createElement("span");
+      break;
     }
+  }
+
+  if (node) {
+    let div = document.createElement("div");
+    node.innerHTML = `${selectedText}`.trim();
+    div.contentEditable = false;
+    div.addEventListener("mousedown", result.action);
+    div.addEventListener("click", (ev) => {
+      ev.preventDefault();
+      ev.stopPropagation();
+    });
+    div.addEventListener("dblclick", (ev) => {
+      console.log("Preventing folding");
+      weave.internal.preventFolding = true;
+    });
+    node.dataset.action = `${selectedText}`;
+    div.classList.toggle("wrap");
+    node.classList.toggle("alive");
+    range.deleteContents();
+    div.appendChild(node);
+    range.insertNode(div);
+    div.insertAdjacentHTML("beforebegin", "&thinsp;");
+    div.insertAdjacentHTML("afterend", "&thinsp;");
+    event.preventDefault();
+  }
+};
 
 let keyStack = {};
 let listing = {};

@@ -110,6 +110,10 @@ const evalJS = (selectionText) => {
 
 const evalExpr = (selectionText, kind) => {
   console.log("Evaluating " + selectionText);
+  const whitespaceRegex = /^\s+$/;
+  if(whitespaceRegex.test(text)){
+    return [null, null, null, null, null]
+  }
   if (kind == "javascript") {
     return evalJS(selectionText);
   }

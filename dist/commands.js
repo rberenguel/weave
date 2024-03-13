@@ -4,6 +4,7 @@ import weave from "./weave.js";
 import { createPanel, postfix, divWithDraggableHandle } from "./doms.js";
 import { common } from "./commands_base.js";
 import { saveAll_, save } from "./save.js";
+import { setupDragging } from "./betterDragging.js";
 
 import { id, eval_, sql } from "./code.js";
 
@@ -21,11 +22,12 @@ const div = {
     const [div, handle] = divWithDraggableHandle();
     div.classList.add("dynamic-div");
     div.innerHTML = selectedHTML; // TODO(me) This nukes the handle
-    handle.classList.add("dynamic-handle");
+    setupDragging(div)
+    //handle.classList.add("dynamic-handle");
     range.deleteContents();
     range.insertNode(div);
     postfix(div);
-    addListeners(handle, div, "dynamic-div");
+    //addListeners(handle, div, "dynamic-div");
   },
 };
 
