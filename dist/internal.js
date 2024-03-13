@@ -62,43 +62,8 @@ const hookBodies = (buttons) => {
     }
 
     // TODO(me) This will only work well for desktop. Figure out an option for mobile.
-    body.addEventListener("contextmenu", (event) => {
-      const selectedText = window.getSelection();
-      const range = selectedText.getRangeAt(0);
-      if (
-        event.srcElement.classList.length > 0 &&
-        event.srcElement.classList.contains("alive")
-      ) {
-        return;
-      }
-      let node;
-
-      for (let button of buttons) {
-        // This can be sped up by reversing the indexing
-        if (button.text.includes(`${selectedText}`)) {
-          node = document.createElement(button.el);
-          node.onmousedown = button.action;
-          node.addEventListener("dblclick", (ev) => {
-            console.log("Preventing folding");
-            weave.internal.preventFolding = true;
-          });
-          node.dataset.action = `${selectedText}`;
-        }
-      }
-
-      if (node) {
-        let div = document.createElement("div");
-        node.innerHTML = `${selectedText}`.trim();
-        div.classList.toggle("wrap");
-        node.classList.toggle("alive");
-        range.deleteContents();
-        div.appendChild(node);
-        range.insertNode(div);
-        div.insertAdjacentHTML("beforebegin", "&thinsp;");
-        div.insertAdjacentHTML("afterend", "&thinsp;");
-        event.preventDefault();
-      }
-    });
+    body.addEventListener("contextmenu", wireButtons(buttons));
+    interact(body).on("hold", wireButtons(buttons));
     body.addEventListener("paste", (event) => {
       // Paste takes a slight bit to modify the DOM, if I trigger
       // the wiring without waiting a pasted button might not be wired
@@ -109,6 +74,51 @@ const hookBodies = (buttons) => {
     });
   }
 };
+
+const wireButtons = (buttons) => (event) => {
+      const selectedText = window.getSelection();
+      const range = selectedText.getRangeAt(0);
+      if (
+        event.srcElement.classList.length > 0 &&
+        event.srcElement.classList.contains("alive")
+      ) {
+        return;
+      }
+      let node, result;
+
+      for (let button of buttons) {
+        if (button.text.includes(`${selectedText}`)) {
+          result = button
+          node = button.el ? document.createElement(button.el) : document.createElement("span");
+         break;
+        }
+      }
+
+      if (node) {
+        let div = document.createElement("div");
+        node.innerHTML = `${selectedText}`.trim();
+          div.contentEditable = false
+          div.addEventListener("mousedown", result.action);
+          div.addEventListener("click", (ev) => {
+            ev.preventDefault()
+            ev.stopPropagation()
+            }
+          )
+          div.addEventListener("dblclick", (ev) => {
+            console.log("Preventing folding");
+            weave.internal.preventFolding = true;
+          });
+          node.dataset.action = `${selectedText}`;
+         div.classList.toggle("wrap");
+        node.classList.toggle("alive");
+        range.deleteContents();
+        div.appendChild(node);
+        range.insertNode(div);
+        div.insertAdjacentHTML("beforebegin", "&thinsp;");
+        div.insertAdjacentHTML("afterend", "&thinsp;");
+        event.preventDefault();
+      }
+    }
 
 let keyStack = {};
 let listing = {};

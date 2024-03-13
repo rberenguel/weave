@@ -48,6 +48,10 @@ body {
   height: 80%;
   overflow: auto;
   resize: both;
+  /*
+   * This does not work in iOS Safari and I might then as well use the 
+   * nice-looking interactjs.io also for dragging.
+   * */
   border: 1px solid var(--bright-orange);
   border-radius: 5px;
   float: inline-start;
@@ -56,6 +60,7 @@ body {
   max-height: 95%;
   max-width: 95%;
   margin: 0.1em;
+
 }
 
 .body-container-dnd-placeholder {
@@ -171,44 +176,44 @@ svg {
   background-color: var(--bright-orange);
 }
 
-.body.folded {
+.body-container.folded {
   height: 1em;
   min-height: 1em;
   resize: horizontal;
   overflow: hidden;
 }
 
-.body::-webkit-scrollbar {
+.body-container::-webkit-scrollbar {
   width: 0.15em;
 }
 
-.body::-webkit-scrollbar:inactive {
+.body-container::-webkit-scrollbar:inactive {
   width: 0.15em;
 }
 
-.body::-webkit-scrollbar-thumb:vertical {
+.body-container::-webkit-scrollbar-thumb:vertical {
   background-color: var(--bright-orange);
   border-top-right-radius: 3px;
   background-clip: padding-box;
 }
 
-.body::-webkit-scrollbar-thumb:horizontal {
+.body-container::-webkit-scrollbar-thumb:horizontal {
   background-color: var(--bright-orange);
   border-bottom-left-radius: 3px;
   background-clip: padding-box;
 }
 
 // For some reason resizer does not get properly styled, ignores width
-.body::-webkit-resizer {
+.body-container::-webkit-resizer {
   background-color: transparent;
   border-bottom-right-radius: 3px;
 }
-.body::-webkit-scrollbar-corner {
+.body-container::-webkit-scrollbar-corner {
   background-color: var(--bright-orange);
   border-bottom-right-radius: 3px;
   width: 0.15em;
 }
-.body::-webkit-scrollbar-track {
+.body-container::-webkit-scrollbar-track {
   background-color: transparent;
 }
 /*
@@ -230,6 +235,11 @@ svg {
 .body:focus {
   outline: none;
 }
+
+.body-container:focus {
+  outline: none;
+}
+
 .dark {
   background: var(--dark-background) !important;
   color: var(--gray-text) !important;

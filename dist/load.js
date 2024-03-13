@@ -92,7 +92,7 @@ const loadHash = () => {
       body.style.fontFamily = bodyData["fontFamily"];
       body.dataset.filename = bodyData["filename"];
       if (bodyData["folded"]) {
-        body.classList.add("folded");
+        body.parentElement.classList.add("folded");
       }
       if (bodyData["gfont"]) {
         addGoogFont(bodyData["gfont"]);

@@ -313,7 +313,7 @@ const infoOnHover = (code) => (ev) => {
     if (code.contains(ev.target)) {
       codeInfo.style.left = mouseX + 2 + "px";
       codeInfo.style.top = mouseY + 2 + "px";
-      codeInfo.textContent = ev.target.hover_title + `\nid: ${code.id}`;
+      codeInfo.textContent = `${ev.target.dataset.kind}\n${ev.target.hover_title}\nid: ${code.id}`;
       codeInfo.classList.add("show");
       code.appendChild(codeInfo);
     }

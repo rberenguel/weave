@@ -37,9 +37,9 @@ const save = {
     body.dataset.filename = filename;
     let b = {};
     b["data"] = body.innerHTML;
-    b["width"] = body.style.width;
-    b["height"] = body.style.height;
-    b["folded"] = body.classList.contains("folded");
+    b["width"] = body.parentElement.style.width;
+    b["height"] = body.parentElement.style.height;
+    b["folded"] = body.parentElement.classList.contains("folded");
     b["fontSize"] = body.style.fontSize;
     b["fontFamily"] = body.style.fontFamily;
     b["gfont"] = body.dataset.gfont;
@@ -68,10 +68,11 @@ function saveAll() {
     } else {
       contents = body.dataset.filename || "";
     }
+    // TODO clean up this repetition, write a centralised getter/setter
     b["data"] = contents;
-    b["width"] = body.style.width;
-    b["height"] = body.style.height;
-    b["folded"] = body.classList.contains("folded");
+    b["width"] = body.parentElement.style.width;
+    b["height"] = body.parentElement.style.height;
+    b["folded"] = body.parentElement.classList.contains("folded");
     b["fontSize"] = body.style.fontSize;
     b["fontFamily"] = body.style.fontFamily;
     b["gfont"] = body.dataset.gfont;
