@@ -63,7 +63,7 @@ const addGoogFont = (fontname) => {
   return linkElement.href;
 };
 
-const loadHash = () => {
+const loadHash = (parentId) => {
   let config = weave.config;
   let bodies = weave.bodies();
   console.info("Loading for");
@@ -74,7 +74,7 @@ const loadHash = () => {
   if (splitHash.length > 1) {
     let bodiesData = JSON.parse(splitHash[1]);
     for (let n = 1; n < bodiesData.length; n++) {
-      createPanel(`b${n}`, weave.buttons());
+      createPanel(parentId, `b${n}`, weave.buttons(weave.root));
     }
     config = JSON.parse(splitHash[0]);
     setConfig(config);
@@ -98,7 +98,7 @@ const loadHash = () => {
         addGoogFont(bodyData["gfont"]);
       }
     }
-    wireEverything(weave.buttons());
+    wireEverything(weave.buttons(weave.root));
   } else {
     setConfig({});
     for (let body of weave.bodies()) {

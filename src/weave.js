@@ -1,3 +1,6 @@
+import { createPanel } from "./doms.js";
+import { hookBody } from "./internal.js";
+
 const weave = {
   bodies: () => document.getElementsByClassName("body"),
   buttons: () => [],
@@ -14,6 +17,9 @@ const weave = {
     bodyClicks: ["b0", "b0"],
     clickedId: ["b0", "b0"],
   },
+  createPanel: createPanel,
+  hookBody: hookBody,
+  root: null
 };
 
 export default weave;

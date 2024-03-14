@@ -71,7 +71,7 @@ const hookBodies = (buttons) => {
       // the wiring without waiting a pasted button might not be wired
       // properly.
       setTimeout(() => {
-        wireEverything(weave.buttons());
+        wireEverything(weave.buttons(weave.root));
       }, 100);
     });
   }
@@ -79,6 +79,7 @@ const hookBodies = (buttons) => {
 
 const wireButtons = (buttons) => (event) => {
   const selectedText = window.getSelection();
+  console.info(`Wiring button for ${selectedText}`)
   const range = selectedText.getRangeAt(0);
   if (
     event.srcElement.classList.length > 0 &&
@@ -87,7 +88,7 @@ const wireButtons = (buttons) => (event) => {
     return;
   }
   let node, result;
-
+  console.log(buttons)
   for (let button of buttons) {
     if (button.text.includes(`${selectedText}`)) {
       result = button;

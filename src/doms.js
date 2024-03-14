@@ -7,7 +7,6 @@ const zwsr = () => document.createTextNode("\u200b");
 
 // HTML elements of interest
 //const bodies = () => document.getElementsByClassName("body");
-const info = document.querySelector("#info");
 
 const pad = (node) => {
   node.insertAdjacentHTML("afterbegin", "&thinsp;");
@@ -31,10 +30,10 @@ const divWithDraggableHandle = () => {
   return [div, handle];
 };
 
-const createPanel = (id, buttons) => {
+const createPanel = (parentId, id, buttons) => {
   const bodyContainer = document.createElement("div");
   bodyContainer.classList.add("body-container");
-
+  bodyContainer.parentId = parentId
   interact(bodyContainer).resizable({
     edges: { left: true, right: true, bottom: true, top: true },
 
@@ -70,7 +69,7 @@ const createPanel = (id, buttons) => {
   body.contentEditable = true;
   body.id = id;
   bodyContainer.appendChild(body);
-  document.getElementById("content").appendChild(bodyContainer);
+  document.getElementById(parentId).appendChild(bodyContainer);
   hookBodies(buttons); // This wires all buttons
   hookBody(body); // This wires all the keys
 };

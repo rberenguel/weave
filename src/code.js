@@ -111,7 +111,7 @@ const evalJS = (selectionText) => {
 const evalExpr = (selectionText, kind) => {
   console.log("Evaluating " + selectionText);
   const whitespaceRegex = /^\s+$/;
-  if(whitespaceRegex.test(text)){
+  if(whitespaceRegex.test(selectionText)){
     return [null, null, null, null, null]
   }
   if (kind == "javascript") {
@@ -131,7 +131,8 @@ const wireEvalFromScratch = (kind) => {
     kind
   );
   console.info(kind);
-  console.info(evaluation);
+  console.info("A, R, R_T, Er, Ev:")
+  console.info(assignment, rvalue, return_text, error, evaluation);
   let range = selection.getRangeAt(0);
   // We need to skip the assignment span to get to the code block…
   // Or stay one below for no-assignments :shrug:
@@ -165,7 +166,7 @@ const wireEvalFromScratch = (kind) => {
     range.deleteContents();
     range.insertNode(code);
     code.dataset.eval_string = selectionText;
-    console.log("Setting evaluation to ", code.dataset.eval_string);
+    console.info("Setting data string to ", code.dataset.eval_string);
     code.hover_title = code.dataset.eval_string;
     code.id = "c" + Date.now();
     if (error) {
@@ -176,6 +177,7 @@ const wireEvalFromScratch = (kind) => {
       wrap(code);
       return code;
     }
+    console.log("Passed through, assigning to variable if needed")
     console.info(evaluation);
     if (kind === "sql" && evaluation) {
       try {

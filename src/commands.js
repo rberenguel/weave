@@ -1,4 +1,4 @@
-export { buttons, createPanel };
+export { buttons };
 
 import weave from "./weave.js";
 import { createPanel, postfix, divWithDraggableHandle } from "./doms.js";
@@ -265,27 +265,28 @@ filePicker.addEventListener("change", (event) => {
       if (b["gfont"]) {
         addGoogFont(b["gfont"]);
       }
-      wireEverything(weave.buttons());
+      wireEverything(weave.buttons(weave.root));
     } catch (error) {
       console.error("Error parsing JSON data:", error);
     }
   };
 });
 
-const split = {
+const split = (parentId) => {return {
   text: ["split"],
   action: (ev) => {
+    console.info(`Splitting for parentId: ${parentId}`)
     if (common(ev)) {
       return;
     }
     const n = weave.bodies().length;
     const id = `b${n}`;
     // This is now repeated!
-    createPanel(id, weave.buttons());
+    createPanel(parentId, id, weave.buttons(weave.root));
   },
   description: "Add a new editing buffer",
   el: "u",
-};
+}}
 
 const underline = {
   text: ["underline", "u"],
@@ -340,7 +341,7 @@ const dark = {
   el: "u",
 };
 
-const buttons = [
+const buttons = (parentId) => {return  [
   mono,
   serif,
   fontup,
@@ -353,7 +354,7 @@ const buttons = [
   italic,
   underline,
   help,
-  split,
+  split(parentId), // TODO: all references to id content should point to this
   eval_,
   close_,
   clear,
@@ -364,12 +365,12 @@ const buttons = [
   div,
   sql,
   id,
-];
+];}
 
-weave.buttons = () => buttons;
+weave.buttons = buttons;
 
 let helpTable = [`<tr><td>Command</td><td>Help</td></tr>`];
-for (let button of buttons) {
+for (let button of buttons()) {
   const commandText = button.text.join("/");
   const tr = `<tr><td>${commandText}</td><td>${button.description}</td></tr>`;
   helpTable.push(tr);
