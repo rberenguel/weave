@@ -173,10 +173,11 @@ const close_ = {
       return;
     }
     // TODO(me) I'm pretty sure closing-saving-loading would fail
-    // if I delete an intermediate panel, needs a "test"
-    const divToRemove = document.getElementById(weave.internal.bodyClicks[0]);
-    const parentElement = divToRemove.parentNode;
-    parentElement.removeChild(divToRemove);
+    // if I delete an intermediate panel, needs some test
+    const bodyToRemove = document.getElementById(weave.internal.bodyClicks[0]);
+    const container = bodyToRemove.closest(".body-container")
+    const parent = container.parentNode;
+    parent.removeChild(container);
   },
   description: "Eliminate a panel",
   el: "u",
@@ -354,9 +355,9 @@ const buttons = (parentId) => {return  [
   italic,
   underline,
   help,
-  split(parentId), // TODO: all references to id content should point to this
-  eval_,
-  close_,
+  split(parentId), // tested
+  eval_, // tests in progress
+  close_, // tested
   clear,
   gfont,
   save,

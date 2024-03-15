@@ -203,6 +203,7 @@ const wireEvalFromScratch = (kind) => {
       } else {
         postfix(code);
       }
+      console.log("Multiline evaluation returned")
       for (let i = 0; i < return_text.length; i++) {
         const line = return_text[i];
         code.appendChild(line);

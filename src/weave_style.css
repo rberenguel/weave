@@ -1,0 +1,345 @@
+#content {
+    flex-wrap: wrap;
+    display: flex;
+  }
+  
+  .body {
+  }
+  
+  .body-container {
+    border-radius: 2px;
+    line-height: 1.5;
+    font-weight: 100;
+    padding: 1em;
+    caret-color: green;
+    width: 80%;
+    height: 80%;
+    overflow: auto;
+    /*
+     * resize: both;
+     * This does not work in iOS Safari and I might then as well use the 
+     * nice-looking interactjs.io also for dragging.
+     * */
+    border: 1px solid var(--bright-orange);
+    border-radius: 5px;
+    float: inline-start;
+    min-width: fit-content;
+    min-height: fit-content;
+    max-height: 95%;
+    max-width: 95%;
+    margin: 0.1em;
+    box-sizing: border-box;
+  }
+  
+  .body-container-dnd-placeholder {
+    border-radius: 2px;
+    line-height: 1.5;
+    font-weight: 100;
+    padding: 1%;
+    caret-color: green;
+    width: 80%;
+    height: 80%;
+    overflow: auto;
+    resize: both;
+    border: 1px solid var(--bright-yellow);
+    border-radius: 5px;
+    float: inline-start;
+    min-width: fit-content;
+    min-height: fit-content;
+    max-height: 95%;
+    max-width: 95%;
+    margin: 0.1em;
+  }
+  
+  /* For code blocks' linking */
+  
+  .draggable-handle {
+    position: relative;
+    top: 0.5em;
+    right: -0.2em;
+    width: 6px;
+    height: 6px;
+    border-radius: 5px;
+    background-color: var(--wired-code);
+    cursor: grab;
+    z-index: 1;
+    display: inline-block;
+    user-select: none;
+  }
+  
+  /* For panels */
+  .dragging {
+    opacity: 0.5;
+  }
+  
+  .dynamic-handle {
+    position: relative;
+    bottom: 0.8em;
+    left: calc(100% - 0.4em);
+    width: 6px;
+    height: 6px;
+    border-radius: 5px;
+    background-color: var(--subtly-transparent);
+    cursor: grab;
+    z-index: 1;
+    display: inline-block;
+    user-select: none;
+  }
+  
+  .dynamic-div {
+    border: 1px solid var(--subtly-transparent);
+    border-radius: 5px;
+    /*white-space: pre-wrap;*/
+    overflow: visible;
+    display: block; /* To accomodate multiline and single-line */
+    /*width: fit-content;*/
+    max-width: 85%;
+    margin: 0.1em;
+    padding-right: 0.1em;
+    padding-top: 0.1em;
+    padding-bottom: 0.1em;
+  }
+  
+  .panel-handle {
+    position: relative;
+    left: 100%;
+    top: -0.2em;
+    width: 6px;
+    height: 6px;
+    border-radius: 5px;
+    background-color: var(--bright-orange);
+    cursor: grab;
+    z-index: 1;
+    display: inline-block;
+    user-select: none;
+  }
+  
+  #svgContainer {
+    width: 100%;
+    height: 100%;
+    position: fixed;
+    z-index: -1;
+    opacity: 0;
+    transition: opacity 0.3s ease-in-out;
+  }
+  
+  #svgContainer.show {
+    opacity: 0.8;
+    display: block;
+  }
+  
+  svg {
+    width: 100%;
+    height: 100%;
+    position: relative;
+  }
+  
+  .connecting-line {
+    stroke: var(--wired-code); /* Default line color */
+    stroke-width: 4; /* Adjust line thickness as needed */
+    opacity: 0.5;
+  }
+  
+  .draggable-handle.dragover {
+    background-color: var(--bright-orange);
+  }
+  
+  .body.folded {
+    /*height: 1em;
+    min-height: 1em;*/
+    overflow: hidden;
+    display: -webkit-box;  /* Essential for line-clamp */
+    -webkit-line-clamp: 1; /* Number of lines to show */
+    -webkit-box-orient: vertical; 
+    overflow: hidden;
+  }
+  
+  .body-container::-webkit-scrollbar {
+    width: 0.15em;
+  }
+  
+  .body-container::-webkit-scrollbar:inactive {
+    width: 0.15em;
+  }
+  
+  .body-container::-webkit-scrollbar-thumb:vertical {
+    background-color: var(--bright-orange);
+    border-top-right-radius: 3px;
+    background-clip: padding-box;
+  }
+  
+  .body-container::-webkit-scrollbar-thumb:horizontal {
+    background-color: var(--bright-orange);
+    border-bottom-left-radius: 3px;
+    background-clip: padding-box;
+  }
+  
+  .body-container::-webkit-resizer {
+    background-color: transparent;
+    border-bottom-right-radius: 3px;
+  }
+  .body-container::-webkit-scrollbar-corner {
+    background-color: var(--bright-orange);
+    border-bottom-right-radius: 3px;
+    width: 0.15em;
+  }
+  .body-container::-webkit-scrollbar-track {
+    background-color: transparent;
+  }
+  /*
+  .dark .assignment {
+  }
+  
+  .dark .keyword {
+  }
+  */
+  .string {
+    color: #2aa198;
+  }
+  .light .brace {
+    color: #268bd2;
+  }
+  .dark .brace {
+    color: #d33682;
+  }
+  .body:focus {
+    outline: none;
+  }
+  
+  .body-container:focus {
+    outline: none;
+  }
+  
+  .dark {
+    background: var(--dark-background) !important;
+    color: var(--gray-text) !important;
+    caret-color: #93a1a1 !important;
+  }
+
+  .mono {
+    font-family: "monoidregular";
+    font-size: 95%;
+  }
+  .serif {
+    font-family: "Reforma1969";
+    font-size: 100%;
+  }
+  #info {
+    position: absolute;
+    right: 2em;
+    top: 2em;
+    opacity: 1;
+    transition: opacity 1s ease-in-out;
+  }
+  .alive {
+    color: var(--dark-background);
+    border-radius: 6px;
+    background: var(--light-background);
+    padding-left: 0.3em;
+    padding-right: 0.3em;
+    font-family: "monoidregular";
+    font-size: 80%;
+  }
+  .fades {
+    opacity: 0 !important;
+  }
+  div.wrap {
+    display: inline-block;
+  }
+  .blur {
+    filter: blur(3px);
+  }
+  .body > pre {
+    font-family: "monoidregular";
+    padding-left: 2em;
+    font-size: 60%;
+    line-height: 1.1em;
+    background-color: #00000022;
+    padding-right: 0.4em;
+    padding-top: 0.4em;
+    padding-bottom: 0.4em;
+    border: 1px solid var(--bright-orange);
+    border-radius: 5px;
+    white-space: pre-wrap;
+    text-indent: -1em each-line;
+    font-weight: 100;
+  }
+  
+  .code.wired {
+    font-family: "monoidregular";
+    padding-left: 0.2em;
+    font-size: 60%;
+    line-height: 1.3em;
+    background-color: #00000022;
+    padding-right: 0.4em;
+    padding-top: 0.4em;
+    padding-bottom: 0.4em;
+    border: 1px solid var(--wired-code);
+    border-radius: 5px;
+    white-space: pre-wrap;
+    overflow: visible;
+    display: inline-block; /* To accomodate multiline and single-line */
+    width: fit-content;
+    font-weight: 100;
+  }
+  
+  .code.dirty {
+    border: 2px solid var(--bright-yellow) !important;
+  }
+  
+  .code.error {
+    border: 2px solid var(--bright-red) !important;
+  }
+  
+  .code-info {
+    color: var(--dark-background);
+    font-family: "monoidregular";
+    position: absolute;
+    background-color: var(--light-background);
+    padding: 0.4em;
+    border-radius: 5px;
+    font-size: 90%;
+    border: 1px solid var(--bright-orange);
+    box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.2);
+    opacity: 0;
+    max-width: 50%;
+    transition: opacity 0.3s ease-in-out;
+  }
+  
+  .code-info.show {
+    opacity: 0.665;
+  }
+  
+  @media print {
+    body,
+    .body {
+      background-color: white !important;
+      color: black !important;
+      font-size: 15pt;
+    }
+  
+    @page {
+      margin-left: 2cm;
+      margin-right: 2.5cm;
+      margin-top: 1cm;
+      margin-bottom: 1cm;
+    }
+  }
+  
+  .highlight {
+    color: var(--bright-orange);
+  }
+  
+  #help {
+    font-size: 15pt;
+    line-height: 1.3;
+    position: absolute;
+    left: 0;
+    top: 10%;
+    margin-left: 15%;
+    margin-right: 15%;
+    padding: 1em;
+    border: 2px solid var(--bright-orange);
+    border-radius: 5px;
+  }
+  

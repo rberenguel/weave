@@ -8,6 +8,6 @@ endif
 
 all: dist/weave.html
 
-serve: all
+serve:
 > echo "http://127.0.0.1:8000/dist/weave.html"
 > python3 -m http.server 8000

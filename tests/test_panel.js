@@ -1,9 +1,10 @@
 import weave from "../src/weave.js";
+import {createButton, events} from './test_helpers.js'
 
 weave.root = "weave-target"
 weave.createPanel(weave.root, "b0", weave.buttons(weave.root));
 
-//mocha.checkLeaks(); I need leaks for code evals
+mocha.checkLeaks();
 mocha.run();
 
 describe('createPanel', function() {
@@ -23,122 +24,85 @@ describe('createPanel', function() {
     });
 })
 
-const addSelectedTextTo = (text, destination) => {
-    const textNode = document.createTextNode(text)
-    destination.appendChild(textNode);
-    const selection = window.getSelection();
-    selection.removeAllRanges();
-    const range = document.createRange();
-    range.setStartBefore(textNode);
-    range.setEndAfter(textNode);
-    selection.addRange(range);
-}
-
-const createButton = (text, panelBody) => {
-    addSelectedTextTo(text, panelBody)
-    const contextMenuEvent = new CustomEvent('contextmenu');
-    panelBody.dispatchEvent(contextMenuEvent);
-}
-
 describe('split text / button', function() {
-    const panel = document.getElementById(weave.root).querySelector(".body-container")
-    const panelBody = document.getElementById(weave.root).querySelector(".body")
-    let splitButton
-    weave.hookBody(panelBody);
-    it('should become a button on right click', function() {
-        createButton("split", panelBody)
-        splitButton = panelBody.querySelector(".wrap")
-        chai.expect(splitButton.innerText).to.eql("split")
-        const buttonNode = splitButton.children[0]
-        chai.expect(buttonNode.dataset.action).to.eql("split")
+    const panelBody = () => document.getElementById(weave.root).querySelector(".body")
+    weave.hookBody(panelBody());
+    const splitButton = () => panelBody().querySelector(".wrap")
+    describe('should go from text to button', function() {
+        it('should become a button on right click', function() {
+            createButton("split", panelBody())
+            chai.expect(splitButton().innerText).to.eql("split")
+            const buttonNode = splitButton().children[0]
+            chai.expect(buttonNode.dataset.action).to.eql("split")
+        });
     });
-    it('should create a panel on click', function() {
+    describe('should behave as a button', function() {
+        it('should not be contenteditable', function() {
+            chai.expect(splitButton().contentEditable).to.equal('false')
+        });
+        it('should create two new panels when clicking twice', function() {
+            const panels = () => document.getElementsByClassName("body-container")
+            chai.expect(panels()).to.have.length(1)
+            console.log(splitButton())
+            splitButton().dispatchEvent(events.mousedown);
+            splitButton().dispatchEvent(events.mousedown);
+            chai.expect(panels()).to.have.length(3)
+            panelBody.innerHTML = ""
+        });
+    })
+    
+});
+
+describe('clear text / button', function() {
+    let thirdPanelBody, button
+    const kLorem = "Lorem ipsum"
+    it('should become a button on right click', function() {
+        thirdPanelBody = document.getElementById(weave.root).querySelectorAll(".body")[2];
+        console.log(thirdPanelBody)
+        createButton("clear", thirdPanelBody)
+        button = thirdPanelBody.querySelector(".wrap")
+        chai.expect(button.innerText).to.eql("clear")
+        const buttonNode = button.children[0]
+        chai.expect(buttonNode.dataset.action).to.eql("clear")
+    });
+    it('after adding some text, and clicking on it, should clear the second panel on click', function() {
         const panels = () => document.getElementsByClassName("body-container")
-        chai.expect(panels()).to.have.length(1)
-        const mousedown = new MouseEvent('mousedown', {
-            bubbles: true,
-          });
-        splitButton.dispatchEvent(mousedown);
-        chai.expect(panels()).to.have.length(2)
-        panels()[1].remove();
-        panelBody.innerHTML = ""
-    });
-})
-
-describe('eval text / button', function(){
-    const panelBody = document.getElementById(weave.root).querySelector(".body")
-    it('should become a button on right click', function() {
-        createButton("eval", panelBody)
-        const evalButton = panelBody.querySelector(".wrap")
-        chai.expect(evalButton.innerText).to.eql("eval")
-        const buttonNode = evalButton.children[0]
-        chai.expect(buttonNode.dataset.action).to.eql("eval")
-    });
-})
-
-describe('eval - direct evaluation', function() {
-    const evaluation = "(9*6).toString(13)"
-    const panelBody = document.getElementById(weave.root).querySelector(".body")
-    let evalButton, evaluated
-    it('should create an evaluation block on click after selecting text to evaluate', function() {
-        evalButton = panelBody.querySelector(".wrap")
-        addSelectedTextTo(evaluation, panelBody);
-        const mousedown = new MouseEvent('mousedown');
-        evalButton.dispatchEvent(mousedown);
-        evaluated = panelBody.querySelector(".wired.code")
-        chai.expect(evaluated).to.exist
-    });
-    it('should correctly assign the result of the evaluation to the block', function() {
-        chai.expect(evaluated.innerText).to.equal('"42"')
-    });
-    it('should correctly assign the string to evaluate to the data container of the block', function() {
-        chai.expect(evaluated.dataset.eval_string).to.equal(evaluation);
-        evaluated.remove()
+        const secondBody = panels()[1].querySelector(".body");
+        chai.expect(panels()).to.have.length(3)
+        secondBody.innerText = kLorem;
+        chai.expect(secondBody.innerText).to.equal(kLorem);
+        secondBody.dispatchEvent(events.click);
+        button.dispatchEvent(events.mousedown);
+        chai.expect(secondBody.innerText).to.equal("");
     });
 });
 
-describe('eval - assignments & edit/reassignment flow', function() {
-    const mousedown = new MouseEvent('mousedown');
-    const click = new MouseEvent('click');
-    const contextmenu = new CustomEvent('contextmenu');
-    const evaluation1 = "in_chai = +(9*6).toString(13)"
-    const evaluation2 = "in_chai - 1"
-    const evaluation3 = "in_chai - 2"
-    const evaluation4 = "in_chai = -42"
-    const panelBody = document.getElementById(weave.root).querySelector(".body")
-    let evalButton
-    it('should handle assignment and evaluation: a = f()', function() {
-        evalButton = panelBody.querySelector(".wrap")
-        addSelectedTextTo(evaluation1, panelBody);
-        evalButton.dispatchEvent(mousedown);
-        // Global leak expected here
-        chai.expect(in_chai).to.equal(42)
-        const assignment = panelBody.querySelector(".wired.code")
-        chai.expect(assignment.innerText).to.equal(evaluation1)
+describe('close text / button', function() {
+    let secondPanelBody, button
+    it('should become a button on right click', function() {
+        secondPanelBody = document.getElementById(weave.root).querySelectorAll(".body")[1];
+        console.log(secondPanelBody)
+        createButton("close", secondPanelBody)
+        button = secondPanelBody.querySelector(".wrap")
+        chai.expect(button.innerText).to.eql("close")
+        const buttonNode = button.children[0]
+        chai.expect(buttonNode.dataset.action).to.eql("close")
     });
-    it('should handle double assignment: a = f(); a-1', function() {
-        addSelectedTextTo(evaluation2, panelBody);
-        evalButton.dispatchEvent(mousedown);
-        const second = panelBody.querySelectorAll(".wired.code")[1]
-        chai.expect(second.innerText).to.equal('41')
-    });
-    it('should handle edits: clicking on the a-1 block switches from computed to computation', function(){
-        const second = panelBody.querySelectorAll(".wired.code")[1]
-        second.dispatchEvent(click);
-        chai.expect(second.innerText).to.equal(evaluation2)
-    });
-    it('should handle edits: changing text and right clicking recomputes the value', function(){
-        const second = panelBody.querySelectorAll(".wired.code")[1]
-        second.innerText = evaluation3
-        second.dispatchEvent(contextmenu);
-        chai.expect(second.innerText).to.equal('40')
-    });
-    it('should handle global recomputation: editing f() affects the things that depend on it', function(){
-        const first = panelBody.querySelectorAll(".wired.code")[0]
-        const second = panelBody.querySelectorAll(".wired.code")[1]
-        first.innerText = evaluation4
-        first.dispatchEvent(contextmenu);
-        chai.expect(first.innerText).to.equal(evaluation4)
-        chai.expect(second.innerText).to.equal('-44')
+    it('should close the second panel on click (after cleaning the click history)', function() {
+        const panels = () => document.getElementsByClassName("body-container")
+        const firstPanelBody = panels()[0].querySelector(".body")
+        const thirdPanelBody = panels()[2].querySelector(".body")
+        thirdPanelBody.dispatchEvent(events.click)
+        thirdPanelBody.dispatchEvent(events.click)
+        thirdPanelBody.dispatchEvent(events.click)
+        console.log(weave)
+        chai.expect(weave.lastBodyClickId()).to.equal("b2")
+        chai.expect(panels()).to.have.length(3)
+        firstPanelBody.dispatchEvent(events.click)
+        chai.expect(weave.lastBodyClickId()).to.equal("b0")
+        button.dispatchEvent(events.mousedown);
+        chai.expect(panels()).to.have.length(2)
+        chai.expect(panels()[0].querySelector(".body").id).to.equal("b1")
+        chai.expect(panels()[1].querySelector(".body").id).to.equal("b2")
     });
 });
