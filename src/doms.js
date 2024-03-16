@@ -41,12 +41,22 @@ const createPanel = (parentId, id, buttons, weave) => {
 
     listeners: {
       move(event) {
-        var target = event.target;
-        var x = parseFloat(target.getAttribute("data-x")) || 0;
-        var y = parseFloat(target.getAttribute("data-y")) || 0;
+        var target = event.target
+        var x = (parseFloat(target.getAttribute('data-x')) || 0)
+        var y = (parseFloat(target.getAttribute('data-y')) || 0)
+        // TODO fix vars and data-x
+        // update the element's style
+        target.style.width = event.rect.width + 'px'
+        target.style.height = event.rect.height + 'px'
 
-        target.style.width = event.rect.width + "px";
-        target.style.height = event.rect.height + "px";
+        // translate when resizing from top or left edges
+        x += event.deltaRect.left
+        y += event.deltaRect.top
+
+        target.style.transform = 'translate(' + x + 'px,' + y + 'px)'
+
+        target.setAttribute('data-x', x)
+        target.setAttribute('data-y', y)
       },
     },
     modifiers: [
@@ -62,21 +72,21 @@ const createPanel = (parentId, id, buttons, weave) => {
   //bodyContainer.appendChild(handle);
   //setupDragging(bodyContainer, handle);
   // TODO: this needs a test
-  let pos = {
+
+  /*let pos = {
     x: 0, y: 0
-  }
+  }*/
   if(id != "b0"){
   const prevContainer = document
     .getElementById("b" + (weave.bodies().length - 1))
     .closest(".body-container");
   
-    pos.x = prevContainer.getBoundingClientRect().x + 10
-    pos.y = prevContainer.getBoundingClientRect().y + 10
-  
-  // TODO Shift with respect to the previous one… this is hacky, should have a method
-  
-
-  bodyContainer.style.transform = "translate(" + pos.x + "px, " + pos.y + "px)";
+    bodyContainer.dataset.x = prevContainer.dataset.x + 10
+    bodyContainer.dataset.y = prevContainer.dataset.y + 10
+    bodyContainer.style.transform = "translate(" + bodyContainer.dataset.x + "px, " + bodyContainer.dataset.y + "px)";
+  } else {
+    bodyContainer.dataset.x = 0
+    bodyContainer.dataset.y = 0
   }
   const betterHandle = document.createElement("div");
   betterHandle.classList.add("better-handle");
@@ -98,11 +108,21 @@ const createPanel = (parentId, id, buttons, weave) => {
   interact(bodyContainer).draggable({
     allowFrom: betterHandle,
     ignoreFrom: body,
+    inertia: true,
+    modifiers: [
+      interact.modifiers.restrictRect({
+        restriction: 'parent',
+        //endOnly: true
+      })
+    ],
+    autoscroll: true,
     listeners: {
       move(event) {
-        pos.x += event.dx;
-        pos.y += event.dy;
-        event.target.style.transform = `translate(${pos.x}px, ${pos.y}px)`;
+        let x = (parseFloat(bodyContainer.dataset.x) || 0) + event.dx;
+        let y = (parseFloat(bodyContainer.dataset.y) || 0) + event.dy;
+        event.target.style.transform = `translate(${x}px, ${y}px)`;
+        bodyContainer.dataset.x = x
+        bodyContainer.dataset.y = y
       },
     },
   });
