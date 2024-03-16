@@ -9,6 +9,8 @@ body {
   margin: 0;
 }
 
+/* This touch-action should be in code */
+
 #content {
   padding: 0.2em;
 }
@@ -38,6 +40,7 @@ body {
 
 .body-container {
   position: relative;
+  touch-action: none;
   line-height: 1.5;
   font-weight: 100;
   /*padding: 1em;*/
@@ -282,7 +285,7 @@ svg {
 }
 
 .light .wrap .alive {
-  color: var(--light-background);
+  color: var(--gray-text);
   border-radius: 6px;
   background: var(--dark-background);
   padding-left: 0.3em;

@@ -109,12 +109,12 @@ const createPanel = (parentId, id, buttons, weave) => {
     allowFrom: betterHandle,
     ignoreFrom: body,
     inertia: true,
-    modifiers: [
+    /*modifiers: [
       interact.modifiers.restrictRect({
         restriction: 'parent',
         //endOnly: true
       })
-    ],
+    ],*/
     autoscroll: true,
     listeners: {
       move(event) {
