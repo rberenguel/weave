@@ -16,7 +16,7 @@ let $ = {
 
 weave.root = "content"
 
-weave.createPanel(weave.root, "b0", weave.buttons(weave.root));
+weave.createPanel(weave.root, "b0", weave.buttons(weave.root), weave);
 
 loadHash();
 

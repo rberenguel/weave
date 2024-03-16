@@ -74,7 +74,7 @@ const loadHash = (parentId) => {
   if (splitHash.length > 1) {
     let bodiesData = JSON.parse(splitHash[1]);
     for (let n = 1; n < bodiesData.length; n++) {
-      createPanel(parentId, `b${n}`, weave.buttons(weave.root));
+      createPanel(parentId, `b${n}`, weave.buttons(weave.root), weave);
     }
     config = JSON.parse(splitHash[0]);
     setConfig(config);

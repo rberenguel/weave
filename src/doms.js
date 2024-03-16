@@ -30,7 +30,7 @@ const divWithDraggableHandle = () => {
   return [div, handle];
 };
 
-const createPanel = (parentId, id, buttons) => {
+const createPanel = (parentId, id, buttons, weave) => {
   const bodyContainer = document.createElement("div");
   bodyContainer.classList.add("body-container");
   bodyContainer.parentId = parentId
@@ -63,8 +63,13 @@ const createPanel = (parentId, id, buttons) => {
 
   const body = document.createElement("div");
   body.classList.add("body");
-  body.classList.add("dark");
-  bodyContainer.classList.add("dark"); // TODO
+  if(weave.config.dark){
+    body.classList.add("dark");
+    bodyContainer.classList.add("dark");
+  } else {
+    body.classList.add("light");
+    bodyContainer.classList.add("light");
+  }
   body.classList.add("serif");
   body.contentEditable = true;
   body.id = id;

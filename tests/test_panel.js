@@ -2,7 +2,7 @@ import weave from "../src/weave.js";
 import {createButton, events} from './test_helpers.js'
 
 weave.root = "weave-target"
-weave.createPanel(weave.root, "b0", weave.buttons(weave.root));
+weave.createPanel(weave.root, "b0", weave.buttons(weave.root), weave);
 
 mocha.checkLeaks();
 mocha.run();
@@ -88,14 +88,13 @@ describe('close text / button', function() {
         const buttonNode = button.children[0]
         chai.expect(buttonNode.dataset.action).to.eql("close")
     });
-    it('should close the second panel on click (after cleaning the click history)', function() {
+    it('should close the first panel on click (after cleaning the click history)', function() {
         const panels = () => document.getElementsByClassName("body-container")
         const firstPanelBody = panels()[0].querySelector(".body")
         const thirdPanelBody = panels()[2].querySelector(".body")
         thirdPanelBody.dispatchEvent(events.click)
         thirdPanelBody.dispatchEvent(events.click)
         thirdPanelBody.dispatchEvent(events.click)
-        console.log(weave)
         chai.expect(weave.lastBodyClickId()).to.equal("b2")
         chai.expect(panels()).to.have.length(3)
         firstPanelBody.dispatchEvent(events.click)
@@ -104,5 +103,74 @@ describe('close text / button', function() {
         chai.expect(panels()).to.have.length(2)
         chai.expect(panels()[0].querySelector(".body").id).to.equal("b1")
         chai.expect(panels()[1].querySelector(".body").id).to.equal("b2")
+        // Clear the second panel
+        panels()[1].querySelector(".body").innerHTML = ""
     });
+});
+
+describe('light text / button', function() {
+    const buttonType = "light"
+    let secondPanelBody, button
+    it('should become a button on right click', function() {
+        secondPanelBody = document.getElementById(weave.root).querySelectorAll(".body")[1];
+        createButton(buttonType, secondPanelBody)
+        button = secondPanelBody.querySelector(".wrap")
+        chai.expect(button.innerText).to.eql(buttonType)
+        const buttonNode = button.children[0]
+        chai.expect(buttonNode.dataset.action).to.eql(buttonType)
+    });
+    it('should set all existing panels (containers and bodies) as light', function() {
+        const panels = () => document.getElementsByClassName("body-container")
+        button.dispatchEvent(events.mousedown);
+        const allContainersLight = Array.from(panels()).every(p => p.classList.contains("light"))
+        const allBodiesLight = Array.from(panels()).every(p => p.querySelector(".body").classList.contains("light"))
+        chai.expect(allContainersLight).to.be.true
+        chai.expect(allBodiesLight).to.be.true
+    });
+    it('should set the global config as light', function(){
+        chai.expect(weave.config.dark).to.be.false
+    })
+    it('should create any new panel as light', function() {
+        createButton("split", secondPanelBody)
+        const splitButton = secondPanelBody.querySelectorAll(".wrap")[1] // The new button is the second
+        splitButton.dispatchEvent(events.mousedown)
+        const panels = document.getElementsByClassName("body-container")
+        const lastPanel = panels[panels.length - 1]
+        chai.expect(lastPanel.classList.contains("light")).to.be.true
+        // cleanup
+        lastPanel.remove()
+        secondPanelBody.innerHTML = ""
+    })
+});
+
+describe('dark text / button', function() {
+    const buttonType = "dark"
+    let secondPanelBody, button
+    it('should become a button on right click', function() {
+        secondPanelBody = document.getElementById(weave.root).querySelectorAll(".body")[1];
+        createButton(buttonType, secondPanelBody)
+        button = secondPanelBody.querySelector(".wrap")
+        chai.expect(button.innerText).to.eql(buttonType)
+        const buttonNode = button.children[0]
+        chai.expect(buttonNode.dataset.action).to.eql(buttonType)
+    });
+    it('should set all existing panels (containers and bodies) as light', function() {
+        const panels = () => document.getElementsByClassName("body-container")
+        button.dispatchEvent(events.mousedown);
+        const allContainersDark = Array.from(panels()).every(p => p.classList.contains("dark"))
+        const allBodiesDark = Array.from(panels()).every(p => p.querySelector(".body").classList.contains("dark"))
+        chai.expect(allContainersDark).to.be.true
+        chai.expect(allBodiesDark).to.be.true
+    });
+    it('should set the global config as dark', function(){
+        chai.expect(weave.config.dark).to.be.true
+    })
+    it('should create any new panel as dark', function() {
+        createButton("split", secondPanelBody)
+        const splitButton = secondPanelBody.querySelectorAll(".wrap")[1] // The new button is the second
+        splitButton.dispatchEvent(events.mousedown)
+        const panels = document.getElementsByClassName("body-container")
+        const lastPanel = panels[panels.length - 1]
+        chai.expect(lastPanel.classList.contains("dark")).to.be.true
+    })
 });

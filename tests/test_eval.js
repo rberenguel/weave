@@ -2,7 +2,7 @@ import weave from "../src/weave.js";
 import {addSelectedTextTo, createButton} from './test_helpers.js'
 
 weave.root = "weave-target"
-weave.createPanel(weave.root, "b0", weave.buttons(weave.root));
+weave.createPanel(weave.root, "b0", weave.buttons(weave.root), weave);
 
 //mocha.checkLeaks(); I need leaks for code evals
 mocha.run();

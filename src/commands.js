@@ -4,7 +4,10 @@ import weave from "./weave.js";
 import { createPanel, postfix, divWithDraggableHandle } from "./doms.js";
 import { common } from "./commands_base.js";
 import { saveAll_, save } from "./save.js";
+import { addGoogFont } from "./load.js";
 import { setupDragging } from "./betterDragging.js";
+import { configLevels } from "./common.js";
+
 
 import { id, eval_, sql } from "./code.js";
 
@@ -283,7 +286,7 @@ const split = (parentId) => {return {
     const n = weave.bodies().length;
     const id = `b${n}`;
     // This is now repeated!
-    createPanel(parentId, id, weave.buttons(weave.root));
+    createPanel(parentId, id, weave.buttons(weave.root), weave); // I might as well send everything once?
   },
   description: "Add a new editing buffer",
   el: "u",
@@ -332,14 +335,42 @@ const dark = {
     if (common(ev)) {
       return;
     }
-    for (let body of bodies()) {
-      body.classList.toggle("dark");
+    for (let body of weave.bodies()) {
+      body.classList.add("dark");
+      body.classList.remove("light")
+    }
+    for(let container of weave.containers()){
+      container.classList.add("dark")
+      container.classList.remove("light")
     }
 
-    config.dark = !config.dark;
+    weave.config.dark = true;
   },
-  description: "Toggle dark/light mode  (stored in config)",
+  description: "Switch to dark mode (stored in config)",
   el: "u",
+  config: configLevels.kGlobalConfig
+};
+
+const light = {
+  text: ["light"],
+  action: (ev) => {
+    if (common(ev)) {
+      return;
+    }
+    for (let body of weave.bodies()) {
+      body.classList.add("light");
+      body.classList.remove("dark")
+    }
+    for(let container of weave.containers()){
+      container.classList.add("light")
+      container.classList.remove("dark")
+    }
+
+    weave.config.dark = false;
+  },
+  description: "Switch to dark mode (stored in config)",
+  el: "u",
+  config: configLevels.kGlobalConfig
 };
 
 const buttons = (parentId) => {return  [
@@ -350,21 +381,22 @@ const buttons = (parentId) => {return  [
   newDoc,
   print_,
   dark,
+  light,
   saveAll_,
-  bold,
-  italic,
-  underline,
+  bold, // tested
+  italic, // tested
+  underline, // tested
   help,
   split(parentId), // tested
-  eval_, // tests in progress
+  eval_, // tested but needs more
   close_, // tested
-  clear,
-  gfont,
+  clear, // tested
+  gfont, // tested
   save,
   load,
   title,
   div,
-  sql,
+  sql, // tested
   id,
 ];}
 

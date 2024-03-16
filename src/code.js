@@ -111,8 +111,8 @@ const evalJS = (selectionText) => {
 const evalExpr = (selectionText, kind) => {
   console.log("Evaluating " + selectionText);
   const whitespaceRegex = /^\s+$/;
-  if(whitespaceRegex.test(selectionText)){
-    return [null, null, null, null, null]
+  if (whitespaceRegex.test(selectionText)) {
+    return [null, null, null, null, null];
   }
   if (kind == "javascript") {
     return evalJS(selectionText);
@@ -131,7 +131,7 @@ const wireEvalFromScratch = (kind) => {
     kind
   );
   console.info(kind);
-  console.info("A, R, R_T, Er, Ev:")
+  console.info("A, R, R_T, Er, Ev:");
   console.info(assignment, rvalue, return_text, error, evaluation);
   let range = selection.getRangeAt(0);
   // We need to skip the assignment span to get to the code block…
@@ -150,7 +150,7 @@ const wireEvalFromScratch = (kind) => {
     parentNodePlain.classList.contains("code");
 
   const [code, handle] = divWithDraggableHandle();
-  handle.remove()
+  handle.remove();
   code.classList.add("wired", "code");
   if (skipPlain || skipAssignment) {
     // If the block is wired we skip
@@ -177,7 +177,7 @@ const wireEvalFromScratch = (kind) => {
       wrap(code);
       return code;
     }
-    console.log("Passed through, assigning to variable if needed")
+    console.log("Passed through, assigning to variable if needed");
     console.info(evaluation);
     if (kind === "sql" && evaluation) {
       try {
@@ -203,7 +203,7 @@ const wireEvalFromScratch = (kind) => {
       } else {
         postfix(code);
       }
-      console.log("Multiline evaluation returned")
+      console.log("Multiline evaluation returned");
       for (let i = 0; i < return_text.length; i++) {
         const line = return_text[i];
         code.appendChild(line);
@@ -295,14 +295,14 @@ const wireEval = (code) => {
     }
     if (src.classList.contains("wired")) {
       // I can't do HTML here: otherwise I lose all the event handlers
-      src.oldText = src.innerText
+      src.oldText = src.innerText;
       src.innerText = src.dataset.eval_string;
       src.editing = true;
-      console.info("Adding current id to stack, stack is")
+      console.info("Adding current id to stack, stack is");
       weave.internal.clickedId.unshift(code.id);
       weave.internal.clickedId.unshift(code.id);
       weave.internal.clickedId.length = 2;
-      console.info(weave.internal.clickedId)
+      console.info(weave.internal.clickedId);
       ev.stopPropagation();
     } else {
       const clickEvent = new Event("click");
@@ -378,7 +378,7 @@ const eval_ = {
       return;
     }
     const code = wireEvalFromScratch("javascript");
-    code.dataset.kind = "javascript"
+    code.dataset.kind = "javascript";
     if (!code) {
       return;
     }
@@ -394,7 +394,7 @@ const sql = {
       return;
     }
     const code = wireEvalFromScratch("sql");
-    code.dataset.kind = "sql"
+    code.dataset.kind = "sql";
     if (!code) {
       return;
     }

@@ -216,6 +216,12 @@
     caret-color: #93a1a1 !important;
   }
 
+  .light {
+    background: var(--light-background) !important;
+    color: var(--dark-background) !important;
+    caret-color: #93a1a1 !important;
+  }
+
   .mono {
     font-family: "monoidregular";
     font-size: 95%;
@@ -240,6 +246,18 @@
     font-family: "monoidregular";
     font-size: 80%;
   }
+
+  .light > .wrap > .alive {
+    color: var(--dark-background);
+    border-radius: 6px;
+    background: var(--light-background);
+    border: 1px solid var(--gray-text);
+    padding-left: 0.3em;
+    padding-right: 0.3em;
+    font-family: "monoidregular";
+    font-size: 80%;
+  }
+
   .fades {
     opacity: 0 !important;
   }

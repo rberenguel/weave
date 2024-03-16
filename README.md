@@ -1,7 +1,7 @@
 # Weave
 
 > [!CAUTION]
-> I'm leaving it in a partially broken state because I want to test some funcionality
+> Some functionality around saving is currently in a broken state.
 
 This is **Weave**, a text "editor" inspired by [Plan9's Acme](https://en.wikipedia.org/wiki/Acme_(text_editor)).
 
@@ -32,6 +32,7 @@ Ideally the whole editor would live in a bookmarklet, as a `data:text/html` URI.
 * [The commands available (so far) are the following](#Thecommandsavailablesofararethefollowing)
 * [Name?](#Name)
 * [Why?](#Why)
+* [Tests](#Tests)
 
 <!-- vscode-markdown-toc-config
 	numbering=false
@@ -82,4 +83,10 @@ Knuth's Literate Programming tool.
 
 ### <a name='Why'></a>Why?
 
-Useful to take somewhat transient and local notes, without needing a text editor of any kind.
+Useful to take somewhat transient and local notes, without needing a text editor of any kind. It's also kind of fun having so much functionality in it.
+
+### <a name='Tests'></a>Tests
+
+I have set up tests using Mocha/Chai running directly in the browser. They create a "Weave" instance hidden, and run commands against that. Works surprisingly effective. You can see them all [here](http://rberenguel.github.io/weave/tests/all_the_tests.html). Each panel corresponds to a separate iframe with a set of tests.
+
+The tests don't run independently (for example, testing that `split` splits depends on testing that `split` becomes a button), so clicking on the "isolation" will fail.

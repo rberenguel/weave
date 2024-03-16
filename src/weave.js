@@ -3,6 +3,7 @@ import { hookBody } from "./internal.js";
 
 const weave = {
   bodies: () => document.getElementsByClassName("body"),
+  containers: () => document.getElementsByClassName("body-container"),
   buttons: () => [],
   // Base config
   config: {
@@ -17,12 +18,14 @@ const weave = {
     bodyClicks: ["b0", "b0"],
     clickedId: ["b0", "b0"],
   },
-  lastBodyClickId: function() { 
+  lastBodyClickId: function () {
     console.log(this);
     console.log(this.internal);
     return this.internal.bodyClicks[0];
   },
-  lastClickId: () => { this.internal.clickedId[0] },
+  lastClickId: () => {
+    this.internal.clickedId[0];
+  },
   createPanel: createPanel,
   hookBody: hookBody,
   root: null,
