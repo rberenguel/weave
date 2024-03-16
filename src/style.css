@@ -1,9 +1,12 @@
 :root {
   --dark-background: #002b36;
+  --subtly-light-background: #deeef2;
+  --subtly-dark-background: #1d1603;
   --light-background: #fdf6e3;
   --gray-text: #a9babc;
   --subtly-transparent: #a9babc77;
   --bright-orange: #c60;
+  --brown: #842;
   --bright-yellow: #cc6;
   --bright-red: #c00;
   --wired-code: #2aa198;

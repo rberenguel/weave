@@ -130,6 +130,9 @@ describe('light text / button', function() {
     it('should set the global config as light', function(){
         chai.expect(weave.config.dark).to.be.false
     })
+    it('should set the content as outer-light', function(){
+        chai.expect(document.getElementById(weave.root).classList.contains("outer-light")).to.be.true
+    })
     it('should create any new panel as light', function() {
         createButton("split", secondPanelBody)
         const splitButton = secondPanelBody.querySelectorAll(".wrap")[1] // The new button is the second
@@ -164,6 +167,9 @@ describe('dark text / button', function() {
     });
     it('should set the global config as dark', function(){
         chai.expect(weave.config.dark).to.be.true
+    })
+    it('should set the content as outer-dark', function(){
+        chai.expect(document.getElementById(weave.root).classList.contains("outer-dark")).to.be.true
     })
     it('should create any new panel as dark', function() {
         createButton("split", secondPanelBody)

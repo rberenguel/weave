@@ -22,7 +22,7 @@ function dragMoveListener(event) {
       ".body-container-dnd-placeholder"
     );
     if (placeholder) placeholder.remove();
-    event.target.style.transform = ""
+    //event.target.style.transform = ""
     event.target.setAttribute("data-x", null);
     event.target.setAttribute("data-y", null);
   }

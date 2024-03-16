@@ -112,9 +112,9 @@ const loadHash = (parentId) => {
 const setConfig = (config) => {
   console.log("Setting config to ", config);
   if (config.dark === undefined || config.dark) {
-    document.body.classList.add("dark");
+    //document.body.classList.add("dark");
   } else {
-    document.body.classList.remove("dark");
+    //document.body.classList.remove("dark");
   }
   if (config.mono) {
     for (let body of weave.bodies()) {
@@ -125,5 +125,5 @@ const setConfig = (config) => {
       body.classList.add("serif");
     }
   }
-  document.body.style.fontSize = `${config.fontsize}px`;
+  //document.body.style.fontSize = `${config.fontsize}px`;
 };

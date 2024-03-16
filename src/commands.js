@@ -284,7 +284,7 @@ const split = (parentId) => {return {
       return;
     }
     const n = weave.bodies().length;
-    const id = `b${n}`;
+    const id = `b${n}`; // TODO: This will work _badly_ with deletions
     // This is now repeated!
     createPanel(parentId, id, weave.buttons(weave.root), weave); // I might as well send everything once?
   },
@@ -343,8 +343,9 @@ const dark = {
       container.classList.add("dark")
       container.classList.remove("light")
     }
-
     weave.config.dark = true;
+    document.getElementById(weave.root).classList.remove("outer-light")
+    document.getElementById(weave.root).classList.add("outer-dark")
   },
   description: "Switch to dark mode (stored in config)",
   el: "u",
@@ -365,8 +366,9 @@ const light = {
       container.classList.add("light")
       container.classList.remove("dark")
     }
-
     weave.config.dark = false;
+    document.getElementById(weave.root).classList.remove("outer-dark")
+    document.getElementById(weave.root).classList.add("outer-light")
   },
   description: "Switch to dark mode (stored in config)",
   el: "u",
