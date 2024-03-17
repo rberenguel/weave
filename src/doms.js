@@ -80,9 +80,11 @@ const createPanel = (parentId, id, buttons, weave) => {
   const prevContainer = document
     .getElementById("b" + (weave.bodies().length - 1))
     .closest(".body-container");
-  
-    bodyContainer.dataset.x = prevContainer.dataset.x + 10
-    bodyContainer.dataset.y = prevContainer.dataset.y + 10
+    // TODO with datasets
+    var x = (parseFloat(prevContainer.getAttribute('data-x')) || 0)
+    var y = (parseFloat(prevContainer.getAttribute('data-y')) || 0)
+    bodyContainer.dataset.x = x + 10
+    bodyContainer.dataset.y = y + 10
     bodyContainer.style.transform = "translate(" + bodyContainer.dataset.x + "px, " + bodyContainer.dataset.y + "px)";
   } else {
     bodyContainer.dataset.x = 0
@@ -123,6 +125,11 @@ const createPanel = (parentId, id, buttons, weave) => {
         event.target.style.transform = `translate(${x}px, ${y}px)`;
         bodyContainer.dataset.x = x
         bodyContainer.dataset.y = y
+
+        // Reflow for scrollbars when moving far right or bottom
+        /*bodyContainer.style.display = 'none'; // Briefly hide 
+        bodyContainer.offsetHeight; // Force reflow 
+        bodyContainer.style.display = '';*/
       },
     },
   });

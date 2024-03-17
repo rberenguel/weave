@@ -7,7 +7,7 @@ import { saveAll_, save } from "./save.js";
 import { addGoogFont } from "./load.js";
 import { setupDragging } from "./betterDragging.js";
 import { configLevels } from "./common.js";
-
+import { jazz } from "./jazz.js";
 
 import { id, eval_, sql } from "./code.js";
 
@@ -344,8 +344,12 @@ const dark = {
       container.classList.remove("light")
     }
     weave.config.dark = true;
-    document.getElementById(weave.root).classList.remove("outer-light")
-    document.getElementById(weave.root).classList.add("outer-dark")
+    let target = document.getElementById(weave.root);
+    if(document.body.id == "weave"){
+      target = document.body
+    }
+    target.classList.remove("outer-light")
+    target.classList.add("outer-dark")
   },
   description: "Switch to dark mode (stored in config)",
   el: "u",
@@ -367,8 +371,13 @@ const light = {
       container.classList.remove("dark")
     }
     weave.config.dark = false;
-    document.getElementById(weave.root).classList.remove("outer-dark")
-    document.getElementById(weave.root).classList.add("outer-light")
+    let target = document.getElementById(weave.root);
+    if(document.body.id == "weave"){
+      console.info("Changing the whole body info")
+      target = document.body
+    }
+    target.classList.remove("outer-dark")
+    target.classList.add("outer-light")
   },
   description: "Switch to dark mode (stored in config)",
   el: "u",
@@ -400,6 +409,7 @@ const buttons = (parentId) => {return  [
   div,
   sql, // tested
   id,
+  jazz
 ];}
 
 weave.buttons = buttons;

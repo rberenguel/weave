@@ -78,9 +78,10 @@ const hookBodies = (buttons) => {
 };
 
 const wireButtons = (buttons) => (event) => {
-  const selectedText = window.getSelection();
+  const selection = window.getSelection();
+  const selectedText = selection.toString().toLowerCase()
   console.info(`Wiring button for ${selectedText}`);
-  const range = selectedText.getRangeAt(0);
+  const range = selection.getRangeAt(0);
   if (
     event.srcElement.classList.length > 0 &&
     event.srcElement.classList.contains("alive")
