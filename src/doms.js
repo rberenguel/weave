@@ -41,22 +41,22 @@ const createPanel = (parentId, id, buttons, weave) => {
 
     listeners: {
       move(event) {
-        var target = event.target
-        var x = (parseFloat(target.getAttribute('data-x')) || 0)
-        var y = (parseFloat(target.getAttribute('data-y')) || 0)
+        var target = event.target;
+        var x = parseFloat(target.getAttribute("data-x")) || 0;
+        var y = parseFloat(target.getAttribute("data-y")) || 0;
         // TODO fix vars and data-x
         // update the element's style
-        target.style.width = event.rect.width + 'px'
-        target.style.height = event.rect.height + 'px'
+        target.style.width = event.rect.width + "px";
+        target.style.height = event.rect.height + "px";
 
         // translate when resizing from top or left edges
-        x += event.deltaRect.left
-        y += event.deltaRect.top
+        x += event.deltaRect.left;
+        y += event.deltaRect.top;
 
-        target.style.transform = 'translate(' + x + 'px,' + y + 'px)'
+        target.style.transform = "translate(" + x + "px," + y + "px)";
 
-        target.setAttribute('data-x', x)
-        target.setAttribute('data-y', y)
+        target.setAttribute("data-x", x);
+        target.setAttribute("data-y", y);
       },
     },
     modifiers: [
@@ -76,19 +76,24 @@ const createPanel = (parentId, id, buttons, weave) => {
   /*let pos = {
     x: 0, y: 0
   }*/
-  if(id != "b0"){
-  const prevContainer = document
-    .getElementById("b" + (weave.bodies().length - 1))
-    .closest(".body-container");
+  if (id != "b0") {
+    const prevContainer = document
+      .getElementById("b" + (weave.bodies().length - 1))
+      .closest(".body-container");
     // TODO with datasets
-    var x = (parseFloat(prevContainer.getAttribute('data-x')) || 0)
-    var y = (parseFloat(prevContainer.getAttribute('data-y')) || 0)
-    bodyContainer.dataset.x = x + 10
-    bodyContainer.dataset.y = y + 10
-    bodyContainer.style.transform = "translate(" + bodyContainer.dataset.x + "px, " + bodyContainer.dataset.y + "px)";
+    var x = parseFloat(prevContainer.getAttribute("data-x")) || 0;
+    var y = parseFloat(prevContainer.getAttribute("data-y")) || 0;
+    bodyContainer.dataset.x = x + 10;
+    bodyContainer.dataset.y = y + 10;
+    bodyContainer.style.transform =
+      "translate(" +
+      bodyContainer.dataset.x +
+      "px, " +
+      bodyContainer.dataset.y +
+      "px)";
   } else {
-    bodyContainer.dataset.x = 0
-    bodyContainer.dataset.y = 0
+    bodyContainer.dataset.x = 0;
+    bodyContainer.dataset.y = 0;
   }
   const betterHandle = document.createElement("div");
   betterHandle.classList.add("better-handle");
@@ -107,6 +112,61 @@ const createPanel = (parentId, id, buttons, weave) => {
   body.id = id;
   betterHandle.appendChild(body);
   bodyContainer.appendChild(betterHandle);
+
+  interact(bodyContainer).dropzone({
+    ondrop: (ev) => {
+      // Dropping for divs
+      console.log("Dropping");
+      let placeholder = document.querySelector(
+        ".body-container-dnd-placeholder"
+      );
+      if (placeholder) {
+        placeholder.remove();
+      }
+      if (ev.relatedTarget.classList.contains("dynamic-div")) {
+        console.info("Dropping a magical div")
+        const dropX = ev.dragEvent.client.x
+        const dropY = ev.dragEvent.client.y
+
+        // Iterate through divA's children
+        let appended = false
+        for (const child of ev.target.querySelector(".body").children) {
+          const childRect = child.getBoundingClientRect();
+          console.log(dropX, dropY, child, childRect)
+          // Check if the drop coordinates are within the child's boundaries
+          if (
+            dropX >= childRect.left &&
+            dropX <= childRect.right &&
+            dropY >= childRect.top &&
+            dropY <= childRect.bottom
+          ) {
+            console.log("Dropped on child:", child);
+            //AAAAA
+            ev.relatedTarget.parentNode.removeChild(ev.relatedTarget);
+            ev.relatedTarget.classList.remove("dragging");
+            ev.relatedTarget.style.transform = "";
+            if (dropX > childRect.top + childRect.height / 2) {
+              child.parentNode.insertBefore(ev.relatedTarget, child.nextSibling);
+            } else {
+              child.parentNode.insertBefore(ev.relatedTarget, child);
+            }
+            appended = true
+            break;
+          }
+        }
+        if(!appended){
+          console.log("Append directly")
+        ev.relatedTarget.parentNode.removeChild(ev.relatedTarget);
+        ev.relatedTarget.classList.remove("dragging");
+        ev.relatedTarget.style.transform = "";
+        ev.target.querySelector(".body").appendChild(ev.relatedTarget)
+        }
+        
+        //ev.target.querySelector(".body").appendChild(ev.relatedTarget);
+      } 
+    },
+  });
+
   interact(bodyContainer).draggable({
     allowFrom: betterHandle,
     ignoreFrom: body,
@@ -119,12 +179,43 @@ const createPanel = (parentId, id, buttons, weave) => {
     ],*/
     autoscroll: true,
     listeners: {
+      enter: (ev) => {
+        console.log("ev entered bc");
+        console.log(ev);
+        let placeholder = document.querySelector(
+          ".body-container-dnd-placeholder"
+        );
+        const draggedElement = document.querySelector(".dragging");
+        if (!placeholder) {
+          placeholder = document.createElement("div");
+          placeholder.classList.add("body-container-dnd-placeholder");
+          const bcr = draggedElement.getBoundingClientRect();
+          if (bcr.height > bcr.width) {
+            placeholder.style.height = bcr.height;
+            placeholder.style.width = "1em";
+          } else {
+            placeholder.style.width = bcr.width;
+            placeholder.style.height = "1em";
+          }
+        }
+        ev.target.querySelector(".body").appendChild(placeholder);
+        /*if(ev.relatedTarget.classList.contains("dynamic-div")){
+          ev.relatedTarget.parentNode.removeChild(ev.relatedTarget)
+          ev.relatedTarget.classList.remove("dragging")
+          ev.relatedTarget.style.transform = ""
+          ev.target.querySelector(".body").appendChild(ev.relatedTarget)
+        }*/
+      },
+      leave: (ev) => {
+        console.log("elvis has left the building");
+        console.log(ev);
+      },
       move(event) {
         let x = (parseFloat(bodyContainer.dataset.x) || 0) + event.dx;
         let y = (parseFloat(bodyContainer.dataset.y) || 0) + event.dy;
         event.target.style.transform = `translate(${x}px, ${y}px)`;
-        bodyContainer.dataset.x = x
-        bodyContainer.dataset.y = y
+        bodyContainer.dataset.x = x;
+        bodyContainer.dataset.y = y;
 
         // Reflow for scrollbars when moving far right or bottom
         /*bodyContainer.style.display = 'none'; // Briefly hide 

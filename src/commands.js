@@ -5,7 +5,7 @@ import { createPanel, postfix, divWithDraggableHandle } from "./doms.js";
 import { common } from "./commands_base.js";
 import { saveAll_, save } from "./save.js";
 import { addGoogFont } from "./load.js";
-import { setupDragging } from "./betterDragging.js";
+import { draggy } from "./betterDragging.js";
 import { configLevels } from "./common.js";
 import { jazz } from "./jazz.js";
 
@@ -25,8 +25,12 @@ const div = {
     const [div, handle] = divWithDraggableHandle();
     div.classList.add("dynamic-div");
     div.innerHTML = selectedHTML; // TODO(me) This nukes the handle
-    setupDragging(div)
+    //setupDragging(div, handle)
     //handle.classList.add("dynamic-handle");
+
+    draggy(div)
+
+
     range.deleteContents();
     range.insertNode(div);
     postfix(div);
