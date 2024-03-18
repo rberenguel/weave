@@ -4,7 +4,7 @@
   "name": "Weave",
   "icons": [
     {
-      "src": "../media/icon.png",
+      "src": "/media/icon.png",
       "sizes": "192x192",
       "type": "image/png"
     }
