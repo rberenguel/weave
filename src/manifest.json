@@ -1,0 +1,16 @@
+{
+  "short_name": "Weave",
+  "version": "0.0.1",
+  "name": "Weave",
+  "icons": [
+    {
+      "src": "../media/icon.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    }
+  ],
+  "start_url": "/index.html",
+  "display": "standalone",
+  "background_color": "#002b36",
+  "theme_color": "#c60"
+}

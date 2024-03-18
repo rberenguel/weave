@@ -4,6 +4,7 @@ export {
   addGoogFont,
   setConfig,
   loadHash,
+  decodeSerializedData
 };
 
 import weave from "./weave.js";
@@ -63,20 +64,29 @@ const addGoogFont = (fontname) => {
   return linkElement.href;
 };
 
+const decodeSerializedData = (data) => {
+  const decodedHash = decodeURIComponent(data);
+  let [configData, bodiesData] = decodedHash.split("\u2223");
+  const parsedConfig = JSON.parse(configData);
+  if(bodies){
+    let parsedDodiesData = JSON.parse(splitHash[1]);
+    return [parsedConfig, parsedDodiesData]
+  }
+  return [parsedConfig]
+}
+
 const loadHash = (parentId) => {
   let config = weave.config;
   let bodies = weave.bodies();
   console.info("Loading for");
   console.debug(bodies);
   const currentHash = window.location.hash.substring(1);
-  const decodedHash = decodeURIComponent(currentHash);
-  const splitHash = decodedHash.split("\u2223");
-  if (splitHash.length > 1) {
-    let bodiesData = JSON.parse(splitHash[1]);
+  let [loadedConfig, bodiesData] = decodeSerializedData(currentHash)
+  if (bodiesData) {
     for (let n = 1; n < bodiesData.length; n++) {
       createPanel(parentId, `b${n}`, weave.buttons(weave.root), weave);
     }
-    config = JSON.parse(splitHash[0]);
+    
     setConfig(config);
 
     for (let id in bodiesData) {

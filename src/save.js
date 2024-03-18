@@ -1,4 +1,4 @@
-export { save, saveAll, saveAll_ };
+export { save, saveAll, saveAll_, serializeSaveData };
 
 import weave from "./weave.js";
 
@@ -39,6 +39,8 @@ const save = {
     b["data"] = body.innerHTML;
     b["width"] = body.parentElement.style.width;
     b["height"] = body.parentElement.style.height;
+    b["x"] = body.parentElement.dataset.x;
+    b["y"] = body.parentElement.dataset.y;
     b["folded"] = body.parentElement.classList.contains("folded");
     b["fontSize"] = body.style.fontSize;
     b["fontFamily"] = body.style.fontFamily;
@@ -58,9 +60,9 @@ const save = {
   el: "u",
 };
 
-function saveAll() {
+const serializeSaveData = (bodies, config) => {
   let savedata = [];
-  for (let body of weave.bodies()) {
+  for (let body of bodies) {
     let b = {};
     let contents;
     if (body.dataset.filename && body.dataset.filename.includes("menu")) {
@@ -80,12 +82,16 @@ function saveAll() {
     savedata.push(b);
   }
 
-  const currentConfig = JSON.stringify(weave.config);
+  const currentConfig = JSON.stringify(config);
   const encodedBodiesContent = encodeURIComponent(
     `${currentConfig}\u2223${JSON.stringify(savedata)}`
   );
+  return encodedBodiesContent
+}
 
-  window.location.hash = encodedBodiesContent;
+function saveAll() {
+  const serializedSaveData = serializeSaveData(weave.bodies(), weave.config)
+  window.location.hash = serializedSaveData;
   info.innerHTML = "&#x1F4BE;";
   info.classList.add("fades");
 }
