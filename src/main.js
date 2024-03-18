@@ -18,7 +18,9 @@ weave.root = "content"
 
 weave.createPanel(weave.root, "b0", weave.buttons(weave.root), weave);
 
-loadHash();
+// TODO Temporarily removing loading
+
+// loadHash();
 
 for (let body of weave.bodies()) {
   weave.hookBody(body);
