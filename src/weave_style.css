@@ -12,7 +12,8 @@
 
 body {
   margin: 0;
-  overflow: auto;
+  /* TODO Hidden looks better as Chrome web app, but fails at scrolling */
+  overflow: hidden;
 }
 
 /* This touch-action should be in code */
