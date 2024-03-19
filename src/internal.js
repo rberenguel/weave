@@ -185,7 +185,7 @@ const hookBody = (body) => {
       }
     }
     if (event.key === "Enter") {
-      hilite();
+      //hilite();
       const selection = window.getSelection();
       if (listing[body.id] && keyStack[body.id].length == 0) {
         // Push the anchor where we pressed enter.

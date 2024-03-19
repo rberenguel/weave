@@ -146,8 +146,9 @@ z-index: 1000;
   border-radius: 5px;
   /*white-space: pre-wrap;*/
   overflow: visible;
-  display: block; /* To accomodate multiline and single-line */
+  display: inline-block; /* To accomodate multiline and single-line */
   /*width: fit-content;*/
+  min-width: 85%;
   max-width: 85%;
   margin: 0.1em;
   padding-right: 0.1em;

@@ -26,4 +26,18 @@ for (let body of weave.bodies()) {
   weave.hookBody(body);
 }
 
+// Prevent selection when dragging stuff (particularly divs)
+
+document.isDragging = false
+
+document.addEventListener('mousemove', (event) => {
+  if (document.isDragging) {
+    event.preventDefault();
+  }
+});
+
+document.addEventListener('mouseup', () => {
+  document.isDragging = false;
+});
+
 window.weave = weave;

@@ -145,7 +145,7 @@ const createPanel = (parentId, id, buttons, weave) => {
             ev.relatedTarget.parentNode.removeChild(ev.relatedTarget);
             ev.relatedTarget.classList.remove("dragging");
             ev.relatedTarget.style.transform = "";
-            if (dropX > childRect.top + childRect.height / 2) {
+            if (dropY > childRect.top + childRect.height / 2) {
               child.parentNode.insertBefore(ev.relatedTarget, child.nextSibling);
             } else {
               child.parentNode.insertBefore(ev.relatedTarget, child);
@@ -198,7 +198,60 @@ const createPanel = (parentId, id, buttons, weave) => {
             placeholder.style.height = "1em";
           }
         }
-        ev.target.querySelector(".body").appendChild(placeholder);
+        // here
+        const dropX = ev.dragEvent.client.x
+        const dropY = ev.dragEvent.client.y
+
+        let appended = false
+        for (const child of ev.target.querySelector(".body").children) {
+          if(child.classList.contains("body-container-dnd-placeholder")){
+            continue
+          }
+          const childRect = child.getBoundingClientRect();
+          console.log(dropX, dropY, child.innerText, childRect)
+          // Check if the drop coordinates are within the child's boundaries
+          // TODO very likely the only viable fix here is to use siblings
+          // to know _where_ exactly in relationship with others. As is,
+          // the problem is hitting "dropped in the div below/above an existing div"
+          // I'm requiring precise falling inside the div as is, which is unlikely.
+          // One option might be just iterating through all children's rects and placing in
+          // "the best place" according to height.
+          if (
+            //dropX >= childRect.left &&
+            //dropX <= childRect.right &&
+            dropY >= childRect.top &&
+            dropY <= childRect.bottom
+          ) {
+            console.log("Dropped on child:", child.innerText);
+            if(placeholder.parentNode){
+              placeholder.parentNode.removeChild(placeholder);
+            }
+            //ev.relatedTarget.classList.remove("dragging");
+            //ev.relatedTarget.style.transform = "";
+            if (dropY > childRect.top + childRect.height / 2) {
+              console.log("On top")
+              child.parentNode.insertBefore(placeholder, child.nextSibling);
+            } else {
+              console.log("On bottom")
+              child.parentNode.insertBefore(placeholder, child);
+            }
+            appended = true
+            break;
+          }
+        }
+        if(!appended){
+          console.log("Append directly")
+        if(placeholder.parentNode){
+          placeholder.parentNode.removeChild(placeholder);
+        }
+        placeholder.classList.remove("dragging");
+        placeholder.style.transform = "";
+        ev.target.querySelector(".body").appendChild(placeholder)
+        }
+        
+ 
+        //
+        //ev.target.querySelector(".body").appendChild(placeholder);
         /*if(ev.relatedTarget.classList.contains("dynamic-div")){
           ev.relatedTarget.parentNode.removeChild(ev.relatedTarget)
           ev.relatedTarget.classList.remove("dragging")

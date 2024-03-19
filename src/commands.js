@@ -17,23 +17,34 @@ const div = {
   text: ["div"],
   action: (ev) => {
     const selection = window.getSelection();
-    const container = document.createElement("div");
-    container.appendChild(selection.getRangeAt(0).cloneContents());
-    const selectedHTML = container.innerHTML + "";
+    const htmlContainer = document.createElement("div");
+    htmlContainer.appendChild(selection.getRangeAt(0).cloneContents());
+    const selectedHTML = htmlContainer.innerHTML + "";
     console.log(`Wiring div`);
     let range = selection.getRangeAt(0);
     const [div, handle] = divWithDraggableHandle();
     div.classList.add("dynamic-div");
-    div.innerHTML = selectedHTML; // TODO(me) This nukes the handle
+    div.innerHTML = selectedHTML; 
     //setupDragging(div, handle)
     //handle.classList.add("dynamic-handle");
 
     draggy(div)
-
-
+    // The following is to remove the phantom divs that can appear when editing in a contenteditable.
+    // I mighta s well do this anywhere I manupulate selections too
+    // TODO this might backfire if the selection for some reason picks up something else! Test this thing
+    const selectionParent = range.commonAncestorContainer.parentNode
+    console.log("Parent: ")
+    console.log(selectionParent)
+    console.log(selectionParent.nodeName)
+    console.log(selectionParent.classList.length)
+    if(selectionParent.nodeName === "DIV" && selectionParent.classList.length == 0){
+      selectionParent.remove()
+    }
     range.deleteContents();
     range.insertNode(div);
+    // Either I do inline-block and postfix or don't postfix
     postfix(div);
+    htmlContainer.remove()
     //addListeners(handle, div, "dynamic-div");
   },
 };

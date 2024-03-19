@@ -91,6 +91,7 @@ const draggy = (div) => {
     },
     listeners: {
       start: (event) => {
+        document.isDragging = true
         event.preventDefault();
         draggedElement = event.target;
         const rect = draggedElement.getBoundingClientRect()

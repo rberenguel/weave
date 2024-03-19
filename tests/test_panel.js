@@ -14,13 +14,13 @@ describe('createPanel', function() {
         chai.expect(panel).to.not.be.empty
         chai.expect(panel).to.have.length(1)
     });
-    it('should have created a panel with two elements (handle and body)', function() {
+    it('should have created a panel with two elements (handle wrapping body)', function() {
         const panelElements = root.children[0].children
         chai.expect(panelElements).to.not.be.empty
-        chai.expect(panelElements).to.have.length(2)
+        chai.expect(panelElements).to.have.length(1)
         console.info(panelElements)
-        chai.expect(panelElements[0].classList.contains("panel-handle")).to.be.true
-        chai.expect(panelElements[1].classList.contains("body")).to.be.true
+        chai.expect(panelElements[0].classList.contains("better-handle")).to.be.true
+        chai.expect(panelElements[0].children[0].classList.contains("body")).to.be.true
     });
 })
 
