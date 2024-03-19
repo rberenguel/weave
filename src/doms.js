@@ -203,7 +203,55 @@ const createPanel = (parentId, id, buttons, weave) => {
         const dropY = ev.dragEvent.client.y
 
         let appended = false
-        for (const child of ev.target.querySelector(".body").children) {
+        let childMap = {}
+        // The way I'm approaching this, sideways changes won't work.
+        // I could do something though
+        for(const child of ev.target.querySelector(".body").children) {
+          const childRect = child.getBoundingClientRect();
+          const mid = childRect.top + childRect.height / 2;
+          // In particular here. I could instead store an array if there are several in the same line
+          childMap[mid] = child
+        }
+        
+        if(placeholder.parentNode){
+          placeholder.parentNode.removeChild(placeholder);
+        }
+        const clearStyles = () => {
+          placeholder.classList.remove("dragging");
+          placeholder.style.transform = "";
+        }        
+        const appendOn = (ancestor) => {
+          clearStyles()
+          ancestor.appendChild(placeholder)
+        }
+        const sortedKeys = Array.from(childMap.keys()).sort();
+        if(sortedKeys.length == 0){
+          console.log("Append directly")
+          appendOn(ev.target.querySelector(".body"))
+          return
+        }
+        if(sortedKeys[0] > dropY){
+          console.log("Append before start")
+          clearStyles()
+          child.parentNode.insertBefore(placeholder, childMap[sortedKeys[0]]);
+          return
+        }
+        for(let i=0;i<sortedKeys.length;i++){
+          const key = sortedKeys[i]
+          if(key > dropY){
+            console.log(`Append before ${childMap[key]}`)
+            clearStyles()
+            child.parentNode.insertBefore(placeholder, childMap[key]);
+            return
+          }
+        }
+        const key = sortedKeys[sortedKeys.length-1]
+        console.log(`Append after ${childMap[key]}`)
+        clearStyles()
+        child.parentNode.insertBefore(placeholder, childMap[key]);
+        return
+ 
+        /*for (const child of ev.target.querySelector(".body").children) {
           if(child.classList.contains("body-container-dnd-placeholder")){
             continue
           }
@@ -241,14 +289,14 @@ const createPanel = (parentId, id, buttons, weave) => {
         }
         if(!appended){
           console.log("Append directly")
-        if(placeholder.parentNode){
-          placeholder.parentNode.removeChild(placeholder);
+          if(placeholder.parentNode){
+            placeholder.parentNode.removeChild(placeholder);
+          }
+          placeholder.classList.remove("dragging");
+          placeholder.style.transform = "";
+          ev.target.querySelector(".body").appendChild(placeholder)
         }
-        placeholder.classList.remove("dragging");
-        placeholder.style.transform = "";
-        ev.target.querySelector(".body").appendChild(placeholder)
-        }
-        
+        */
  
         //
         //ev.target.querySelector(".body").appendChild(placeholder);
