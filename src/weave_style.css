@@ -73,40 +73,18 @@ body {
   border: 2px solid var(--bright-orange);
 }
 
-.body-container-dnd-placeholder {
-  border-radius: 2px;
-  line-height: 1.5;
-  font-weight: 100;
-  padding: 1%;
-  caret-color: green;
-  width: 80%;
-  height: 80%;
-  overflow: auto;
-  resize: both;
-  border: 1px solid var(--bright-yellow);
+.div-dnd-placeholder {
+  /* Same properties as dynamic-div */
+  border: 2px solid var(--bright-yellow);
   border-radius: 5px;
-  float: inline-start;
-  min-width: fit-content;
-  min-height: fit-content;
-  max-height: 95%;
-  max-width: 95%;
-  margin: 0.1em;
-}
-
-/* For code blocks' linking */
-
-.draggable-handle {
-  position: relative;
-  top: 0.5em;
-  right: -0.2em;
-  width: 6px;
-  height: 6px;
-  border-radius: 5px;
-  background-color: var(--wired-code);
-  cursor: grab;
-  z-index: 1;
+  overflow: visible;
   display: inline-block;
-  user-select: none;
+  min-width: 85%;
+  max-width: 85%;
+  margin: 0.1em;
+  padding-right: 0.1em;
+  padding-top: 0.1em;
+  padding-bottom: 0.1em;
 }
 
 /* For panels */
@@ -194,10 +172,6 @@ svg {
   stroke: var(--wired-code); /* Default line color */
   stroke-width: 4; /* Adjust line thickness as needed */
   opacity: 0.5;
-}
-
-.draggable-handle.dragover {
-  background-color: var(--bright-orange);
 }
 
 .body.folded {

@@ -8,10 +8,9 @@ import { addGoogFont } from "./load.js";
 import { draggy } from "./betterDragging.js";
 import { configLevels } from "./common.js";
 import { jazz } from "./jazz.js";
+import { GuillotineJS } from "./guillotine.js";
 
 import { id, eval_, sql } from "./code.js";
-
-import { addListeners } from "./dragging.js";
 
 const div = {
   text: ["div"],
@@ -47,6 +46,18 @@ const div = {
     htmlContainer.remove()
     //addListeners(handle, div, "dynamic-div");
   },
+};
+
+const guillotine = {
+  text: ["guillotine"],
+  action: (ev) => {
+    if (common(ev)) {
+      return;
+    }
+    GuillotineJS(true)
+  },
+  description: "Start GuillotineJS",
+  el: "u",
 };
 
 const mono = {
@@ -424,7 +435,8 @@ const buttons = (parentId) => {return  [
   div,
   sql, // tested
   id,
-  jazz
+  jazz,
+  guillotine
 ];}
 
 weave.buttons = buttons;

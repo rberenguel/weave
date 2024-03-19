@@ -1,6 +1,5 @@
 export { createPanel, zwsr, pad, wrap, postfix, divWithDraggableHandle };
 import { hookBodies, hookBody } from "./internal.js";
-import { setupDragging } from "./betterDragging.js";
 
 // TODO: I think I want to be able to move panels instead of drag-and-drop.
 
@@ -38,12 +37,13 @@ const createPanel = (parentId, id, buttons, weave) => {
   bodyContainer.parentId = parentId;
   interact(bodyContainer).resizable({
     edges: { left: true, right: true, bottom: true, top: true },
-
+    // TODO There is something failing in resize
     listeners: {
       move(event) {
-        var target = event.target;
-        var x = parseFloat(target.getAttribute("data-x")) || 0;
-        var y = parseFloat(target.getAttribute("data-y")) || 0;
+        let target = event.target;
+        const current = target.getBoundingClientRect()
+        let x = parseFloat(target.dataset.x) || current.x;
+        let y = parseFloat(target.dataset.y) || current.y;
         // TODO fix vars and data-x
         // update the element's style
         target.style.width = event.rect.width + "px";
@@ -114,25 +114,140 @@ const createPanel = (parentId, id, buttons, weave) => {
   bodyContainer.appendChild(betterHandle);
 
   interact(bodyContainer).dropzone({
-    ondrop: (ev) => {
-      // Dropping for divs
-      console.log("Dropping");
+    ondropmove: (ev) => {
       let placeholder = document.querySelector(
-        ".body-container-dnd-placeholder"
+        ".div-dnd-placeholder"
+      );
+      const draggedElement = document.querySelector(".dragging");
+      if (!placeholder) {
+        placeholder = document.createElement("div");
+        placeholder.classList.add("div-dnd-placeholder");
+        const bcr = draggedElement.getBoundingClientRect();
+        if (bcr.height > bcr.width) {
+          placeholder.style.height = bcr.height;
+          placeholder.style.width = "1em";
+        } else {
+          placeholder.style.width = bcr.width;
+          placeholder.style.height = "1em";
+        }
+      }
+      // here
+      const dropX = ev.dragEvent.client.x
+      const dropY = ev.dragEvent.client.y
+  
+      let childMap = {}
+      // The way I'm approaching this, sideways changes won't work.
+      // I could do something though
+      for(const child of ev.target.querySelector(".body").children) {
+        if(child.classList.contains("div-dnd-placeholder")){
+          continue
+        }
+        const childRect = child.getBoundingClientRect();
+        const mid = childRect.top + childRect.height / 2;
+        // In particular here. I could instead store an array if there are several in the same line
+        childMap[mid] = child
+      }
+      
+      if(placeholder.parentNode){
+        placeholder.parentNode.removeChild(placeholder);
+      }
+      const clearStyles = () => {
+        placeholder.classList.remove("dragging");
+        placeholder.style.transform = "";
+      }        
+      const appendOn = (ancestor) => {
+        clearStyles()
+        ancestor.appendChild(placeholder)
+      }
+      const sortedKeys = Array.from(Object.keys(childMap)).map(e => +e).sort();
+      if(sortedKeys.length == 0){
+        appendOn(ev.target.querySelector(".body"))
+        return
+      }
+      if(sortedKeys[0] > dropY){
+        const key = sortedKeys[0]
+        clearStyles()
+        childMap[key].parentNode.insertBefore(placeholder, childMap[key]);
+        return
+      }
+      for(let i=0;i<sortedKeys.length;i++){
+        const key = sortedKeys[i]
+        if(key > dropY){
+          clearStyles()
+          childMap[key].parentNode.insertBefore(placeholder, childMap[key]);
+          return
+        }
+      }
+      const key = sortedKeys[sortedKeys.length-1]
+      clearStyles()
+      childMap[key].parentNode.appendChild(placeholder);
+      return
+    },
+    // TODO all this d-n-d shenanigans needs tests
+    ondrop: (ev) => {
+      // TODO this code should be more equivalent to the placeholder drop, otherwise it behaves weirdly
+      // Dropping for divs
+      let placeholder = document.querySelector(
+        ".div-dnd-placeholder"
       );
       if (placeholder) {
         placeholder.remove();
       }
+      // TODO use the accept option of interact.js
       if (ev.relatedTarget.classList.contains("dynamic-div")) {
         console.info("Dropping a magical div")
         const dropX = ev.dragEvent.client.x
         const dropY = ev.dragEvent.client.y
 
+        let childMap = {}
+        for(const child of ev.target.querySelector(".body").children) {
+          if(child.classList.contains("div-dnd-placeholder")){
+            continue
+          }
+          const childRect = child.getBoundingClientRect();
+          const mid = childRect.top + childRect.height / 2;
+          // In particular here. I could instead store an array if there are several in the same line
+          childMap[mid] = child
+        }
+        if(ev.relatedTarget.parentNode){
+          ev.relatedTarget.parentNode.removeChild(ev.relatedTarget);
+        }
+        const clearStyles = () => {
+          ev.relatedTarget.classList.remove("dragging");
+          ev.relatedTarget.style.transform = "";
+        }        
+        const appendOn = (ancestor) => {
+          clearStyles()
+          ancestor.appendChild(ev.relatedTarget)
+        }
+        const sortedKeys = Array.from(Object.keys(childMap)).map(e => +e).sort();
+        if(sortedKeys.length == 0){
+          appendOn(ev.target.querySelector(".body"))
+          return
+        }
+        if(sortedKeys[0] > dropY){
+          const key = sortedKeys[0]
+          clearStyles()
+          childMap[key].parentNode.insertBefore(ev.relatedTarget, childMap[key]);
+          return
+        }
+        for(let i=0;i<sortedKeys.length;i++){
+          const key = sortedKeys[i]
+          if(key > dropY){
+            clearStyles()
+            childMap[key].parentNode.insertBefore(ev.relatedTarget, childMap[key]);
+            return
+          }
+        }
+        const key = sortedKeys[sortedKeys.length-1]
+        clearStyles()
+        childMap[key].parentNode.appendChild(ev.relatedTarget);
+        return
+        /*
         // Iterate through divA's children
         let appended = false
         for (const child of ev.target.querySelector(".body").children) {
           const childRect = child.getBoundingClientRect();
-          console.log(dropX, dropY, child, childRect)
           // Check if the drop coordinates are within the child's boundaries
           if (
             dropX >= childRect.left &&
@@ -140,7 +255,6 @@ const createPanel = (parentId, id, buttons, weave) => {
             dropY >= childRect.top &&
             dropY <= childRect.bottom
           ) {
-            console.log("Dropped on child:", child);
             //AAAAA
             ev.relatedTarget.parentNode.removeChild(ev.relatedTarget);
             ev.relatedTarget.classList.remove("dragging");
@@ -155,17 +269,16 @@ const createPanel = (parentId, id, buttons, weave) => {
           }
         }
         if(!appended){
-          console.log("Append directly")
         ev.relatedTarget.parentNode.removeChild(ev.relatedTarget);
         ev.relatedTarget.classList.remove("dragging");
         ev.relatedTarget.style.transform = "";
         ev.target.querySelector(".body").appendChild(ev.relatedTarget)
         }
-        
+        */
         //ev.target.querySelector(".body").appendChild(ev.relatedTarget);
       } 
     },
-  });
+  })
 
   interact(bodyContainer).draggable({
     allowFrom: betterHandle,
@@ -179,134 +292,7 @@ const createPanel = (parentId, id, buttons, weave) => {
     ],*/
     autoscroll: true,
     listeners: {
-      enter: (ev) => {
-        console.log("ev entered bc");
-        console.log(ev);
-        let placeholder = document.querySelector(
-          ".body-container-dnd-placeholder"
-        );
-        const draggedElement = document.querySelector(".dragging");
-        if (!placeholder) {
-          placeholder = document.createElement("div");
-          placeholder.classList.add("body-container-dnd-placeholder");
-          const bcr = draggedElement.getBoundingClientRect();
-          if (bcr.height > bcr.width) {
-            placeholder.style.height = bcr.height;
-            placeholder.style.width = "1em";
-          } else {
-            placeholder.style.width = bcr.width;
-            placeholder.style.height = "1em";
-          }
-        }
-        // here
-        const dropX = ev.dragEvent.client.x
-        const dropY = ev.dragEvent.client.y
 
-        let appended = false
-        let childMap = {}
-        // The way I'm approaching this, sideways changes won't work.
-        // I could do something though
-        for(const child of ev.target.querySelector(".body").children) {
-          const childRect = child.getBoundingClientRect();
-          const mid = childRect.top + childRect.height / 2;
-          // In particular here. I could instead store an array if there are several in the same line
-          childMap[mid] = child
-        }
-        
-        if(placeholder.parentNode){
-          placeholder.parentNode.removeChild(placeholder);
-        }
-        const clearStyles = () => {
-          placeholder.classList.remove("dragging");
-          placeholder.style.transform = "";
-        }        
-        const appendOn = (ancestor) => {
-          clearStyles()
-          ancestor.appendChild(placeholder)
-        }
-        const sortedKeys = Array.from(childMap.keys()).sort();
-        if(sortedKeys.length == 0){
-          console.log("Append directly")
-          appendOn(ev.target.querySelector(".body"))
-          return
-        }
-        if(sortedKeys[0] > dropY){
-          console.log("Append before start")
-          clearStyles()
-          child.parentNode.insertBefore(placeholder, childMap[sortedKeys[0]]);
-          return
-        }
-        for(let i=0;i<sortedKeys.length;i++){
-          const key = sortedKeys[i]
-          if(key > dropY){
-            console.log(`Append before ${childMap[key]}`)
-            clearStyles()
-            child.parentNode.insertBefore(placeholder, childMap[key]);
-            return
-          }
-        }
-        const key = sortedKeys[sortedKeys.length-1]
-        console.log(`Append after ${childMap[key]}`)
-        clearStyles()
-        child.parentNode.insertBefore(placeholder, childMap[key]);
-        return
- 
-        /*for (const child of ev.target.querySelector(".body").children) {
-          if(child.classList.contains("body-container-dnd-placeholder")){
-            continue
-          }
-          const childRect = child.getBoundingClientRect();
-          console.log(dropX, dropY, child.innerText, childRect)
-          // Check if the drop coordinates are within the child's boundaries
-          // TODO very likely the only viable fix here is to use siblings
-          // to know _where_ exactly in relationship with others. As is,
-          // the problem is hitting "dropped in the div below/above an existing div"
-          // I'm requiring precise falling inside the div as is, which is unlikely.
-          // One option might be just iterating through all children's rects and placing in
-          // "the best place" according to height.
-          if (
-            //dropX >= childRect.left &&
-            //dropX <= childRect.right &&
-            dropY >= childRect.top &&
-            dropY <= childRect.bottom
-          ) {
-            console.log("Dropped on child:", child.innerText);
-            if(placeholder.parentNode){
-              placeholder.parentNode.removeChild(placeholder);
-            }
-            //ev.relatedTarget.classList.remove("dragging");
-            //ev.relatedTarget.style.transform = "";
-            if (dropY > childRect.top + childRect.height / 2) {
-              console.log("On top")
-              child.parentNode.insertBefore(placeholder, child.nextSibling);
-            } else {
-              console.log("On bottom")
-              child.parentNode.insertBefore(placeholder, child);
-            }
-            appended = true
-            break;
-          }
-        }
-        if(!appended){
-          console.log("Append directly")
-          if(placeholder.parentNode){
-            placeholder.parentNode.removeChild(placeholder);
-          }
-          placeholder.classList.remove("dragging");
-          placeholder.style.transform = "";
-          ev.target.querySelector(".body").appendChild(placeholder)
-        }
-        */
- 
-        //
-        //ev.target.querySelector(".body").appendChild(placeholder);
-        /*if(ev.relatedTarget.classList.contains("dynamic-div")){
-          ev.relatedTarget.parentNode.removeChild(ev.relatedTarget)
-          ev.relatedTarget.classList.remove("dragging")
-          ev.relatedTarget.style.transform = ""
-          ev.target.querySelector(".body").appendChild(ev.relatedTarget)
-        }*/
-      },
       leave: (ev) => {
         console.log("elvis has left the building");
         console.log(ev);
