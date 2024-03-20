@@ -1,16 +1,34 @@
 export { buttons };
 
 import weave from "./weave.js";
-import { createPanel, postfix, prefix, divWithDraggableHandle } from "./doms.js";
+import {
+  createPanel,
+  postfix,
+  prefix,
+  divWithDraggableHandle,
+} from "./doms.js";
 import { common } from "./commands_base.js";
-import { saveAll_, save } from "./save.js";
+import { saveAll_, save, isave } from "./save.js";
 import { addGoogFont } from "./load.js";
 import { draggy } from "./betterDragging.js";
 import { configLevels } from "./common.js";
 import { jazz } from "./jazz.js";
 import { GuillotineJS } from "./guillotine.js";
+import { wireEverything } from "./load.js";
 
 import { id, eval_, sql } from "./code.js";
+import { get, keys, del } from "./libs/idb-keyval.js";
+
+weave.idb = { 
+  keys: () => {
+    // This looks fishy, but may work
+    keys().then((keys) => weave.idb.allKeys = keys);
+    return weave.idb.allKeys
+  },
+  del: (key) => {
+    del(key)
+  }
+}
 
 const div = {
   text: ["div"],
@@ -23,21 +41,24 @@ const div = {
     let range = selection.getRangeAt(0);
     const [div, handle] = divWithDraggableHandle();
     div.classList.add("dynamic-div");
-    div.innerHTML = selectedHTML; 
+    div.innerHTML = selectedHTML;
 
-    draggy(div)
+    draggy(div);
     // The following is to remove the phantom divs that can appear when editing in a contenteditable.
     // I mighta s well do this anywhere I manupulate selections too
     // TODO this might backfire if the selection for some reason picks up something else! Test this thing
-    const selectionParent = range.commonAncestorContainer.parentNode
-    if(selectionParent.nodeName === "DIV" && selectionParent.classList.length == 0){
-      selectionParent.remove()
+    const selectionParent = range.commonAncestorContainer.parentNode;
+    if (
+      selectionParent.nodeName === "DIV" &&
+      selectionParent.classList.length == 0
+    ) {
+      selectionParent.remove();
     }
     range.deleteContents();
     range.insertNode(div);
     // Either I do inline-block and postfix or don't postfix
     postfix(div);
-    htmlContainer.remove()
+    htmlContainer.remove();
     //addListeners(handle, div, "dynamic-div");
   },
 };
@@ -48,8 +69,8 @@ const hr = {
     const selection = window.getSelection();
     let range = selection.getRangeAt(0);
     range.deleteContents();
-    const hr = document.createElement("hr")
-    range.insertNode(hr)
+    const hr = document.createElement("hr");
+    range.insertNode(hr);
     // TODO This is not working reliably, commented
     //const sib = hr.previousElementSibling
     //const emptyText = sib != null && sib.nodeName === "#text" && sib.textContent === ""
@@ -58,11 +79,11 @@ const hr = {
     //  prefix(hr)
     //}
     //postfix(hr);
-    prefix(hr)
-    postfix(hr)
+    prefix(hr);
+    postfix(hr);
   },
   action: (ev) => {
-   /*const selectionParent = range.commonAncestorContainer.parentNode
+    /*const selectionParent = range.commonAncestorContainer.parentNode
     if(selectionParent.nodeName === "DIV" && selectionParent.classList.length == 0){
       selectionParent.remove()
     }
@@ -77,14 +98,13 @@ const hr = {
   el: "hr",
 };
 
-
 const guillotine = {
   text: ["guillotine"],
   action: (ev) => {
     if (common(ev)) {
       return;
     }
-    GuillotineJS(true)
+    GuillotineJS(true);
   },
   description: "Start GuillotineJS",
   el: "u",
@@ -234,7 +254,7 @@ const close_ = {
     // TODO(me) I'm pretty sure closing-saving-loading would fail
     // if I delete an intermediate panel, needs some test
     const bodyToRemove = document.getElementById(weave.internal.bodyClicks[0]);
-    const container = bodyToRemove.closest(".body-container")
+    const container = bodyToRemove.closest(".body-container");
     const parent = container.parentNode;
     parent.removeChild(container);
   },
@@ -294,6 +314,49 @@ const load = {
 
 const filePicker = document.getElementById("filePicker");
 
+const iload = {
+  text: ["iload"],
+  action: (ev) => {
+    // Reverse of save. Needs a panel chosen and a selected text for the filename for now
+    const filename = window.getSelection() + "";
+    get(filename).then((content) => {
+      console.info("Loaded from IndexedDb");
+      loadFromContent(atob(content), filename);
+    });
+  },
+  description: "Load a pane to disk, you won't be choosing where though",
+  el: "u",
+};
+
+const loadFromContent = (content, filename) => {
+  console.log(decodeURIComponent(content));
+  const base64Data = content.split(",")[1];
+  console.log(base64Data);
+  const decoded = decodeURIComponent(content);
+  console.log(decoded);
+  try {
+    const b = JSON.parse(decoded);
+    // TODO(me) This is now repeated when we load everything, too
+    console.log(weave.internal.bodyClicks);
+    const body = document.getElementById(weave.internal.bodyClicks[1]);
+    body.dataset.filename = filename;
+    body.innerHTML = b["data"];
+    body.style.width = b["width"];
+    body.style.height = b["height"];
+    if (b["folded"]) {
+      body.classList.add("folded");
+    }
+    body.style.fontSize = b["fontSize"];
+    body.style.fontFamily = b["fontFamily"];
+    if (b["gfont"]) {
+      addGoogFont(b["gfont"]);
+    }
+    wireEverything(weave.buttons(weave.root));
+  } catch (error) {
+    console.error("Error parsing JSON data or building the panels", error);
+  }
+};
+
 filePicker.addEventListener("change", (event) => {
   const file = event.target.files[0];
 
@@ -303,50 +366,27 @@ filePicker.addEventListener("change", (event) => {
   reader.onload = (readerEvent) => {
     const content = readerEvent.target.result;
     console.log(content);
-    console.log(decodeURIComponent(content));
-    const base64Data = content.split(",")[1];
-    console.log(base64Data);
-    const decoded = decodeURIComponent(content);
-    console.log(decoded);
-    try {
-      const b = JSON.parse(decoded);
-      // TODO(me) This is now repeated when we load everything, too
-      console.log(weave.internal.bodyClicks);
-      const body = document.getElementById(weave.internal.bodyClicks[1]);
-      body.dataset.filename = file.name;
-      body.innerHTML = b["data"];
-      body.style.width = b["width"];
-      body.style.height = b["height"];
-      if (b["folded"]) {
-        body.classList.add("folded");
-      }
-      body.style.fontSize = b["fontSize"];
-      body.style.fontFamily = b["fontFamily"];
-      if (b["gfont"]) {
-        addGoogFont(b["gfont"]);
-      }
-      wireEverything(weave.buttons(weave.root));
-    } catch (error) {
-      console.error("Error parsing JSON data:", error);
-    }
+    loadFromContent(content, file.name);
   };
 });
 
-const split = (parentId) => {return {
-  text: ["split"],
-  action: (ev) => {
-    console.info(`Splitting for parentId: ${parentId}`)
-    if (common(ev)) {
-      return;
-    }
-    const n = weave.bodies().length;
-    const id = `b${n}`; // TODO: This will work _badly_ with deletions
-    // This is now repeated!
-    createPanel(parentId, id, weave.buttons(weave.root), weave); // I might as well send everything once?
-  },
-  description: "Add a new editing buffer",
-  el: "u",
-}}
+const split = (parentId) => {
+  return {
+    text: ["split"],
+    action: (ev) => {
+      console.info(`Splitting for parentId: ${parentId}`);
+      if (common(ev)) {
+        return;
+      }
+      const n = weave.bodies().length;
+      const id = `b${n}`; // TODO: This will work _badly_ with deletions
+      // This is now repeated!
+      createPanel(parentId, id, weave.buttons(weave.root), weave); // I might as well send everything once?
+    },
+    description: "Add a new editing buffer",
+    el: "u",
+  };
+};
 
 const underline = {
   text: ["underline", "u"],
@@ -393,23 +433,23 @@ const dark = {
     }
     for (let body of weave.bodies()) {
       body.classList.add("dark");
-      body.classList.remove("light")
+      body.classList.remove("light");
     }
-    for(let container of weave.containers()){
-      container.classList.add("dark")
-      container.classList.remove("light")
+    for (let container of weave.containers()) {
+      container.classList.add("dark");
+      container.classList.remove("light");
     }
     weave.config.dark = true;
     let target = document.getElementById(weave.root);
-    if(document.body.id == "weave"){
-      target = document.body
+    if (document.body.id == "weave") {
+      target = document.body;
     }
-    target.classList.remove("outer-light")
-    target.classList.add("outer-dark")
+    target.classList.remove("outer-light");
+    target.classList.add("outer-dark");
   },
   description: "Switch to dark mode (stored in config)",
   el: "u",
-  config: configLevels.kGlobalConfig
+  config: configLevels.kGlobalConfig,
 };
 
 const light = {
@@ -420,55 +460,59 @@ const light = {
     }
     for (let body of weave.bodies()) {
       body.classList.add("light");
-      body.classList.remove("dark")
+      body.classList.remove("dark");
     }
-    for(let container of weave.containers()){
-      container.classList.add("light")
-      container.classList.remove("dark")
+    for (let container of weave.containers()) {
+      container.classList.add("light");
+      container.classList.remove("dark");
     }
     weave.config.dark = false;
     let target = document.getElementById(weave.root);
-    if(document.body.id == "weave"){
-      console.info("Changing the whole body info")
-      target = document.body
+    if (document.body.id == "weave") {
+      console.info("Changing the whole body info");
+      target = document.body;
     }
-    target.classList.remove("outer-dark")
-    target.classList.add("outer-light")
+    target.classList.remove("outer-dark");
+    target.classList.add("outer-light");
   },
   description: "Switch to dark mode (stored in config)",
   el: "u",
-  config: configLevels.kGlobalConfig
+  config: configLevels.kGlobalConfig,
 };
 
-const buttons = (parentId) => {return  [
-  mono,
-  serif,
-  fontup,
-  fontdown,
-  newDoc,
-  print_,
-  dark,
-  light,
-  saveAll_,
-  bold, // tested
-  italic, // tested
-  underline, // tested
-  help,
-  split(parentId), // tested
-  eval_, // tested but needs more
-  close_, // tested
-  clear, // tested
-  gfont, // tested
-  save,
-  load,
-  title,
-  div,
-  sql, // tested
-  id,
-  jazz,
-  guillotine,
-  hr
-];}
+const buttons = (parentId) => {
+  return [
+    mono,
+    serif,
+    fontup,
+    fontdown,
+    newDoc,
+    print_,
+    dark,
+    light,
+    saveAll_,
+    bold, // tested
+    italic, // tested
+    underline, // tested
+    help,
+    split(parentId), // tested
+    eval_, // tested but needs more
+    close_, // tested
+    clear, // tested
+    gfont, // tested
+    save,
+    isave,
+    load,
+    iload,
+    title,
+    div,
+    sql, // tested
+    id,
+    jazz,
+    guillotine,
+    hr,
+  ];
+};
 
 weave.buttons = buttons;
 

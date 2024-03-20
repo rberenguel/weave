@@ -35,6 +35,10 @@ const hookBodies = (buttons) => {
     }
     if (!body.dblClickAttached) {
       body.parentElement.addEventListener("dblclick", (ev) => {
+        if(ev.target === body || body.contains(ev.target)){
+          // This should be the body proper only
+          return
+        }
         const selection = window
           .getSelection()
           .toString()
@@ -47,13 +51,18 @@ const hookBodies = (buttons) => {
         } else {
           if (!weave.internal.preventFolding) {
             body.classList.toggle("folded");
+            body.closest(".body-container").classList.toggle("folded-bc")
             if (body.classList.contains("folded")) {
-              body.dataset.height = body.parentElement.style.height;
-              body.parentElement.style.height = "1.5em";
-              body.style.height = "1.5em";
+              // Just folded everything. Need to preserve the height of the container before folding
+              body.dataset.unfoldedHeight = body.closest(".body-container").style.height;
+              body.closest(".body-container").style.height = "";
+              interact(body.closest(".body-container")).resizable({
+                edges: { top: false, left: true, bottom: false, right: true }})
+              //body.style.height = "1.5em";
             } else {
-              body.parentElement.style.height = body.dataset.height;
-              body.style.height = "1.5em";
+              body.closest(".body-container").style.height = body.dataset.unfoldedHeight;
+              interact(body.closest(".body-container")).resizable({
+                edges: { top: true, left: true, bottom: true, right: true }})
             }
           } else {
             weave.internal.preventFolding = false;

@@ -51,7 +51,8 @@ body {
   /*padding: 1em;*/
   caret-color: green;
   width: 95%;
-  height: 300px;
+  min-height: fit-content;
+  /* height: 300px; why the f had I this hardcoded? */
   overflow: auto;
   /*
      * resize: both;
@@ -67,6 +68,11 @@ body {
   max-width: 95%;
   margin: 1em;
   box-sizing: border-box;
+}
+
+.folded-bc {
+  border: 2px dashed var(--bright-orange);
+  border-radius: 8px;
 }
 
 .body-container.light {
@@ -120,7 +126,7 @@ z-index: 1000;
 }
 
 .dynamic-div {
-  border: 1px solid var(--subtly-transparent);
+  border: 1px solid var(--bright-yellow);
   border-radius: 5px;
   /*white-space: pre-wrap;*/
   overflow: visible;
@@ -132,6 +138,7 @@ z-index: 1000;
   padding-right: 0.1em;
   padding-top: 0.1em;
   padding-bottom: 0.1em;
+  padding-left:0.2em;
 }
 
 .panel-handle {
@@ -177,11 +184,11 @@ svg {
 .body.folded {
   /*height: 1em;
     min-height: 1em;*/
+  max-height: 1.5em;
   overflow: hidden;
   display: -webkit-box; /* Essential for line-clamp */
   -webkit-line-clamp: 1; /* Number of lines to show */
   -webkit-box-orient: vertical;
-  overflow: hidden;
 }
 
 .body-container::-webkit-scrollbar {

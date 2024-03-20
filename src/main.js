@@ -41,3 +41,4 @@ document.addEventListener('mouseup', () => {
 });
 
 window.weave = weave;
+window.w = window.weave
