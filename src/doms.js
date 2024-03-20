@@ -1,4 +1,4 @@
-export { createPanel, zwsr, pad, wrap, postfix, divWithDraggableHandle };
+export { createPanel, zwsr, pad, wrap, prefix, postfix, divWithDraggableHandle };
 import { hookBodies, hookBody } from "./internal.js";
 
 // TODO: I think I want to be able to move panels instead of drag-and-drop.
@@ -17,6 +17,10 @@ const pad = (node) => {
 const wrap = (node) => {
   postfix(node);
 };
+const prefix = (node) => {
+  node.insertAdjacentHTML("beforebegin", "&thinsp;");
+};
+
 
 const postfix = (node) => {
   node.insertAdjacentHTML("afterend", "&thinsp;");

@@ -1,7 +1,7 @@
 export { buttons };
 
 import weave from "./weave.js";
-import { createPanel, postfix, divWithDraggableHandle } from "./doms.js";
+import { createPanel, postfix, prefix, divWithDraggableHandle } from "./doms.js";
 import { common } from "./commands_base.js";
 import { saveAll_, save } from "./save.js";
 import { addGoogFont } from "./load.js";
@@ -24,18 +24,12 @@ const div = {
     const [div, handle] = divWithDraggableHandle();
     div.classList.add("dynamic-div");
     div.innerHTML = selectedHTML; 
-    //setupDragging(div, handle)
-    //handle.classList.add("dynamic-handle");
 
     draggy(div)
     // The following is to remove the phantom divs that can appear when editing in a contenteditable.
     // I mighta s well do this anywhere I manupulate selections too
     // TODO this might backfire if the selection for some reason picks up something else! Test this thing
     const selectionParent = range.commonAncestorContainer.parentNode
-    console.log("Parent: ")
-    console.log(selectionParent)
-    console.log(selectionParent.nodeName)
-    console.log(selectionParent.classList.length)
     if(selectionParent.nodeName === "DIV" && selectionParent.classList.length == 0){
       selectionParent.remove()
     }
@@ -47,6 +41,42 @@ const div = {
     //addListeners(handle, div, "dynamic-div");
   },
 };
+
+const hr = {
+  text: ["---"],
+  creator: () => {
+    const selection = window.getSelection();
+    let range = selection.getRangeAt(0);
+    range.deleteContents();
+    const hr = document.createElement("hr")
+    range.insertNode(hr)
+    // TODO This is not working reliably, commented
+    //const sib = hr.previousElementSibling
+    //const emptyText = sib != null && sib.nodeName === "#text" && sib.textContent === ""
+    //console.log(sib)
+    //if(sib === null || emptyText){
+    //  prefix(hr)
+    //}
+    //postfix(hr);
+    prefix(hr)
+    postfix(hr)
+  },
+  action: (ev) => {
+   /*const selectionParent = range.commonAncestorContainer.parentNode
+    if(selectionParent.nodeName === "DIV" && selectionParent.classList.length == 0){
+      selectionParent.remove()
+    }
+    range.deleteContents();
+    range.insertNode(div);
+    // Either I do inline-block and postfix or don't postfix
+    postfix(div);
+    htmlContainer.remove()
+    */
+    //addListeners(handle, div, "dynamic-div");
+  },
+  el: "hr",
+};
+
 
 const guillotine = {
   text: ["guillotine"],
@@ -182,7 +212,7 @@ const fontdown = {
 
 function printDiv(divId) {
   const divElement = document.getElementById(divId);
-  // TODO(me) Needs some minor styling, based on the chosen font (and font size?)
+  // TODO(me) Needs heavy work in styling, based on the chosen font (and font size?)
   const printWindow = window.open("", "", "height=400,width=600");
   printWindow.document.write("<html><head><title>Print</title>");
   printWindow.document.write();
@@ -436,7 +466,8 @@ const buttons = (parentId) => {return  [
   sql, // tested
   id,
   jazz,
-  guillotine
+  guillotine,
+  hr
 ];}
 
 weave.buttons = buttons;

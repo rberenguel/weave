@@ -63,7 +63,6 @@ const hookBodies = (buttons) => {
       body.dblClickAttached = true;
     }
 
-    // TODO(me) This will only work well for desktop. Figure out an option for mobile.
     body.addEventListener("contextmenu", wireButtons(buttons));
     interact(body).on("hold", wireButtons(buttons));
     body.addEventListener("paste", (event) => {
@@ -92,6 +91,11 @@ const wireButtons = (buttons) => (event) => {
   console.log(buttons);
   for (let button of buttons) {
     if (button.text.includes(`${selectedText}`)) {
+      if(button.creator){
+        // An override to have autoformatted selections
+        button.creator()
+        return
+      }
       result = button;
       node = button.el
         ? document.createElement(button.el)
@@ -157,7 +161,7 @@ const hookBody = (body) => {
       if (keyStack[body.id][0] == "Enter") {
         keyStack[body.id].push("-");
         if (keyStack[body.id].slice(1).join("") === "---") {
-          const zws = zwsr();
+          /*const zws = zwsr();
           keyStack[body.id] = ["Enter"]; // We want possibly lists in this case
           const selection = window.getSelection();
           let range = deleteCurrentWord(selection);
@@ -168,6 +172,7 @@ const hookBody = (body) => {
           newRange.setStartAfter(zws);
           selection.removeAllRanges();
           selection.addRange(newRange);
+          */
         }
       }
     }
