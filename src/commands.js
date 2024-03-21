@@ -389,7 +389,7 @@ const gload = {
 const iload = {
   text: ["iload"],
   action: (ev) => {
-    const body = document.getElementById(weave.internal.bodyClicks[1]);
+    const body = document.getElementById(weave.internal.bodyClicks[0]);
     entries().then((entries) => {
       console.log(entries)
       for (const [key, value] of entries) {

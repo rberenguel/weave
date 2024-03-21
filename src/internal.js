@@ -10,14 +10,21 @@ const hookBodies = (buttons) => {
     if (!body.clickAttached) {
       body.addEventListener("click", (ev) => {
         weave.internal.clickedId.unshift(body.id);
+        console.log(body.closest(".body-container").classList)
+        Array.from(
+          document.getElementsByClassName("mildly-highlighted")
+        ).forEach((e) => e.classList.remove("mildly-highlighted"));
+        body.closest(".body-container").classList.add("mildly-highlighted");
+        
+
         weave.internal.clickedId.length = 2;
-        if(weave.internal.grouping){
-          if(weave.internal.group.has(body.id)){
-            weave.internal.group.delete(body.id)
-            document.getElementById(body.id).closest(".body-container").classList.remove("selected")
+        if (weave.internal.grouping) {
+          if (weave.internal.group.has(body.id)) {
+            weave.internal.group.delete(body.id);
+            body.closest(".body-container").classList.remove("selected");
           } else {
-            weave.internal.group.add(body.id)
-            document.getElementById(body.id).closest(".body-container").classList.add("selected")
+            weave.internal.group.add(body.id);
+            body.closest(".body-container").classList.add("selected");
           }
         }
         if (!weave.internal.cancelShifting) {
@@ -44,9 +51,9 @@ const hookBodies = (buttons) => {
     }
     if (!body.dblClickAttached) {
       body.parentElement.addEventListener("dblclick", (ev) => {
-        if(ev.target === body || body.contains(ev.target)){
+        if (ev.target === body || body.contains(ev.target)) {
           // This should be the body proper only
-          return
+          return;
         }
         const selection = window
           .getSelection()
@@ -60,18 +67,22 @@ const hookBodies = (buttons) => {
         } else {
           if (!weave.internal.preventFolding) {
             body.classList.toggle("folded");
-            body.closest(".body-container").classList.toggle("folded-bc")
+            body.closest(".body-container").classList.toggle("folded-bc");
             if (body.classList.contains("folded")) {
               // Just folded everything. Need to preserve the height of the container before folding
-              body.dataset.unfoldedHeight = body.closest(".body-container").style.height;
+              body.dataset.unfoldedHeight =
+                body.closest(".body-container").style.height;
               body.closest(".body-container").style.height = "";
               interact(body.closest(".body-container")).resizable({
-                edges: { top: false, left: true, bottom: false, right: true }})
+                edges: { top: false, left: true, bottom: false, right: true },
+              });
               //body.style.height = "1.5em";
             } else {
-              body.closest(".body-container").style.height = body.dataset.unfoldedHeight;
+              body.closest(".body-container").style.height =
+                body.dataset.unfoldedHeight;
               interact(body.closest(".body-container")).resizable({
-                edges: { top: true, left: true, bottom: true, right: true }})
+                edges: { top: true, left: true, bottom: true, right: true },
+              });
             }
           } else {
             weave.internal.preventFolding = false;
@@ -96,7 +107,7 @@ const hookBodies = (buttons) => {
 
 const wireButtons = (buttons) => (event) => {
   const selection = window.getSelection();
-  const selectedText = selection.toString().toLowerCase()
+  const selectedText = selection.toString().toLowerCase();
   console.info(`Wiring button for ${selectedText}`);
   const range = selection.getRangeAt(0);
   if (
@@ -109,10 +120,10 @@ const wireButtons = (buttons) => (event) => {
   console.log(buttons);
   for (let button of buttons) {
     if (button.text.includes(`${selectedText}`)) {
-      if(button.creator){
+      if (button.creator) {
         // An override to have autoformatted selections
-        button.creator()
-        return
+        button.creator();
+        return;
       }
       result = button;
       node = button.el
@@ -127,8 +138,8 @@ const wireButtons = (buttons) => (event) => {
     node.innerHTML = `${selectedText}`.trim();
     div.contentEditable = false;
     div.addEventListener("mousedown", result.action);
-    div.alive = true
-    node.alive = true
+    div.alive = true;
+    node.alive = true;
     div.addEventListener("click", (ev) => {
       ev.preventDefault();
       ev.stopPropagation();

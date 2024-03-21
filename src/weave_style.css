@@ -119,6 +119,11 @@ body {
   0 0 50px 20px #cc660011; /* Even larger, faint glow */
 }
 
+.mildly-highlighted {
+  box-shadow: 
+  0 0 10px 4px #cc660033; /* Subtle inner glow */
+}
+
 .folded-bc {
   border: 2px dashed var(--bright-orange);
   border-radius: 8px;
