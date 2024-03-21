@@ -11,6 +11,15 @@ const hookBodies = (buttons) => {
       body.addEventListener("click", (ev) => {
         weave.internal.clickedId.unshift(body.id);
         weave.internal.clickedId.length = 2;
+        if(weave.internal.grouping){
+          if(weave.internal.group.has(body.id)){
+            weave.internal.group.delete(body.id)
+            document.getElementById(body.id).closest(".body-container").classList.remove("selected")
+          } else {
+            weave.internal.group.add(body.id)
+            document.getElementById(body.id).closest(".body-container").classList.add("selected")
+          }
+        }
         if (!weave.internal.cancelShifting) {
           weave.internal.bodyClicks.unshift(body.id);
           weave.internal.bodyClicks.length = 2;
@@ -118,6 +127,8 @@ const wireButtons = (buttons) => (event) => {
     node.innerHTML = `${selectedText}`.trim();
     div.contentEditable = false;
     div.addEventListener("mousedown", result.action);
+    div.alive = true
+    node.alive = true
     div.addEventListener("click", (ev) => {
       ev.preventDefault();
       ev.stopPropagation();

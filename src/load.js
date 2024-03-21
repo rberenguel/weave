@@ -44,8 +44,10 @@ const wireEverything = (buttons) => {
     for (let button of buttons) {
       // This could be sped up by reversing the indexing
       // TODO this is repeated
-      if (button.text.includes(aliveButton.dataset.action)) {
+      if (button.text.includes(aliveButton.dataset.action) && !aliveButton.alive ) {
         aliveButton.onmousedown = button.action;
+        console.info(`Setting click on ${aliveButton.dataset.action}`)
+        aliveButton.alive = true
         aliveButton.addEventListener("dblclick", (ev) => {
           console.debug("Preventing folding");
           weave.internal.preventFolding = true;

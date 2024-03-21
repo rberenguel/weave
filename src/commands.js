@@ -8,7 +8,13 @@ import {
   divWithDraggableHandle,
 } from "./doms.js";
 import { common } from "./commands_base.js";
-import { saveAll_, save, isave } from "./save.js";
+import {
+  saveAll_,
+  save,
+  isave,
+  gsave,
+  showModalAndGetFilename,
+} from "./save.js";
 import { addGoogFont } from "./load.js";
 import { draggy } from "./betterDragging.js";
 import { configLevels } from "./common.js";
@@ -17,18 +23,38 @@ import { GuillotineJS } from "./guillotine.js";
 import { wireEverything } from "./load.js";
 
 import { id, eval_, sql } from "./code.js";
-import { get, keys, del } from "./libs/idb-keyval.js";
+import { get, keys, del, set, entries } from "./libs/idb-keyval.js";
 
-weave.idb = { 
+weave.idb = {
   keys: () => {
-    // This looks fishy, but may work
-    keys().then((keys) => weave.idb.allKeys = keys);
-    return weave.idb.allKeys
+    keys().then((keys) => (weave.idb.allKeys = keys));
+    return weave.idb.allKeys;
   },
   del: (key) => {
-    del(key)
-  }
-}
+    del(key);
+  },
+  set: set,
+};
+
+const grouping = {
+  text: ["group"],
+  action: (ev) => {
+    if (common(ev)) {
+      return;
+    }
+    if (weave.internal.grouping) {
+      weave.internal.grouping = false;
+      Array.from(document.getElementsByClassName("selected")).forEach((e) =>
+        e.classList.remove("selected")
+      );
+    } else {
+      weave.internal.grouping = true;
+      weave.internal.group = new Set();
+    }
+  },
+  description: "Start GuillotineJS",
+  el: "u",
+};
 
 const div = {
   text: ["div"],
@@ -82,19 +108,7 @@ const hr = {
     prefix(hr);
     postfix(hr);
   },
-  action: (ev) => {
-    /*const selectionParent = range.commonAncestorContainer.parentNode
-    if(selectionParent.nodeName === "DIV" && selectionParent.classList.length == 0){
-      selectionParent.remove()
-    }
-    range.deleteContents();
-    range.insertNode(div);
-    // Either I do inline-block and postfix or don't postfix
-    postfix(div);
-    htmlContainer.remove()
-    */
-    //addListeners(handle, div, "dynamic-div");
-  },
+  action: (ev) => {},
   el: "hr",
 };
 
@@ -314,21 +328,102 @@ const load = {
 
 const filePicker = document.getElementById("filePicker");
 
+const enterKeyDownEvent = new KeyboardEvent("keydown", {
+  key: "Enter",
+  code: "Enter",
+  which: 13,
+  keyCode: 13,
+  bubbles: false,
+});
+
+const gload = {
+  text: ["gload"],
+  action: (ev) => {
+    // TODO list only things with pipes in the values in indexeddb
+    entries().then((entries) => {
+      for (const [key, value] of entries) {
+        if (!value.startsWith("g:")) {
+          continue;
+        }
+        const k = document.createTextNode(key);
+        const div = document.createElement("div");
+        div.appendChild(k);
+        const modal = document.getElementById("modal");
+        modal.appendChild(div);
+        div.addEventListener("click", (ev) => {
+          const inp = document.querySelector("input.filename");
+          inp.value = key;
+          modal.innerHTML = ""
+          inp.dispatchEvent(enterKeyDownEvent);
+        });
+      }
+      const hr = document.createElement("hr");
+      modal.appendChild(hr);
+      showModalAndGetFilename("group name?", (groupname) => {
+        get(groupname)
+          .then((groupcontent) => {
+            const files = groupcontent.substring(2).split("|");
+            let n = weave.bodies().length;
+            for (const filename of files) {
+              const bodyId = `b${n}`; // TODO NO, this is not good enough
+              createPanel(weave.root, bodyId, weave.buttons(weave.root), weave);
+              const body = document.getElementById(bodyId);
+              n += 1;
+              console.info(`Loading ${filename} from IndexedDB`);
+              get(filename).then((filecontent) => {
+                console.info("Loaded from IndexedDb");
+                loadFromContent(atob(filecontent), filename, body);
+              });
+            }
+          })
+          .catch((err) =>
+            console.log("Loading group from IndexedDb failed", err)
+          );
+      });
+    });
+  },
+  description: "Load a group of panes",
+  el: "u",
+};
+
 const iload = {
   text: ["iload"],
   action: (ev) => {
-    // Reverse of save. Needs a panel chosen and a selected text for the filename for now
-    const filename = window.getSelection() + "";
-    get(filename).then((content) => {
-      console.info("Loaded from IndexedDb");
-      loadFromContent(atob(content), filename);
+    const body = document.getElementById(weave.internal.bodyClicks[1]);
+    entries().then((entries) => {
+      console.log(entries)
+      for (const [key, value] of entries) {
+        if (value.startsWith("g:")) {
+          continue;
+        }
+        const k = document.createTextNode(key);
+        const div = document.createElement("div");
+        div.appendChild(k);
+        const modal = document.getElementById("modal");
+        modal.appendChild(div);
+        div.addEventListener("click", (ev) => {
+          const inp = document.querySelector("input.filename");
+          inp.value = key;
+          modal.innerHTML = ""
+          inp.dispatchEvent(enterKeyDownEvent);
+        });
+      }
+      const hr = document.createElement("hr");
+      modal.appendChild(hr);
+      showModalAndGetFilename("filename?", (filename) => {
+        console.info(`Loading ${filename} from IndexedDB`);
+        get(filename).then((filecontent) => {
+          console.info("Loaded from IndexedDb");
+          loadFromContent(atob(filecontent), filename, body);
+        });
+      });
     });
   },
   description: "Load a pane to disk, you won't be choosing where though",
   el: "u",
 };
 
-const loadFromContent = (content, filename) => {
+const loadFromContent = (content, filename, body) => {
   console.log(decodeURIComponent(content));
   const base64Data = content.split(",")[1];
   console.log(base64Data);
@@ -338,7 +433,6 @@ const loadFromContent = (content, filename) => {
     const b = JSON.parse(decoded);
     // TODO(me) This is now repeated when we load everything, too
     console.log(weave.internal.bodyClicks);
-    const body = document.getElementById(weave.internal.bodyClicks[1]);
     body.dataset.filename = filename;
     body.innerHTML = b["data"];
     body.style.width = b["width"];
@@ -366,7 +460,11 @@ filePicker.addEventListener("change", (event) => {
   reader.onload = (readerEvent) => {
     const content = readerEvent.target.result;
     console.log(content);
-    loadFromContent(content, file.name);
+    loadFromContent(
+      content,
+      file.name,
+      document.getElementById(weave.internal.bodyClicks[1])
+    );
   };
 });
 
@@ -511,6 +609,9 @@ const buttons = (parentId) => {
     jazz,
     guillotine,
     hr,
+    grouping,
+    gsave,
+    gload,
   ];
 };
 

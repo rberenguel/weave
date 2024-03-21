@@ -70,6 +70,55 @@ body {
   box-sizing: border-box;
 }
 
+#modal {
+  padding: 1em;
+  position: absolute;
+  margin: auto;
+  line-height: 1.5;
+  font-weight: 100;
+  min-height: fit-content;
+  min-width: fit-content;
+  overflow: auto;
+  border: 1px solid var(--bright-orange);
+  border-radius: 5px;
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-family: "monoidregular" !important;
+  z-index: 10000;
+}
+
+.filename {
+  font-size: 110%;
+  border: none;
+  font-family: "monoidregular" !important;
+}
+
+.filename::placeholder { 
+  color: var(--subtly-transparent) !important;
+  font-style: italic; /* Optional, adds additional distinction */
+  font-family: "monoidregular" !important;
+}
+
+.filename:focus {
+  outline: none;
+}
+
+.selected {
+  box-shadow: 
+  0 0 10px 2px #cccc66cc, /* Smaller, brighter inner glow */
+  0 0 30px 10px #cccc6644, /* Larger, softer outer glow */
+  0 0 50px 20px #cccc6611; /* Even larger, faint glow */
+}
+
+.highlighted {
+  box-shadow: 
+  0 0 10px 2px #cc6600cc, /* Smaller, brighter inner glow */
+  0 0 30px 10px #cc660044, /* Larger, softer outer glow */
+  0 0 50px 20px #cc660011; /* Even larger, faint glow */
+}
+
 .folded-bc {
   border: 2px dashed var(--bright-orange);
   border-radius: 8px;

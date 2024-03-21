@@ -1,4 +1,4 @@
-export { isave, save, saveAll, saveAll_, serializeSaveData };
+export { gsave, isave, save, saveAll, saveAll_, serializeSaveData, showModalAndGetFilename };
 
 import weave from "./weave.js";
 
@@ -34,80 +34,146 @@ const getBasicSaveString = (body) => {
   return btoa(encodeURIComponent(savedata));
 };
 
-const filenameToSelectedBodyFromSelection = () => {
-  // If there is no text selected, use the filename from the panel.
-  // If there is no text selected, and the panel has no filename, use om.json
-  const selection = window.getSelection() + "";
-  let body;
-  let filename = "om.json";
-  let selected = false;
-  if (selection.length > 0) {
-    filename = selection;
-    body = document.getElementById(weave.internal.bodyClicks[1]);
-  } else {
-    body = document.getElementById(weave.internal.bodyClicks[0]);
-    if (body.dataset.filename) {
-      filename = body.dataset.filename;
+function showModalAndGetFilename(placeholder, callback) {
+  const inp = document.createElement("input");
+  inp.classList.add("dark");
+  inp.classList.add("filename");
+  inp.placeholder = placeholder;
+  const modal = document.getElementById("modal");
+  modal.appendChild(inp);
+  modal.style.display = "block";
+  inp.focus()
+  inp.addEventListener("keydown", function (ev) {
+    console.log(ev);
+    if (ev.key === "Enter") {
+      ev.preventDefault();
+      const filename = inp.value;
+      callback(filename);
+      modal.style.display = "none";
+      modal.innerHTML = ""
     }
+  });
+}
+
+const setFilenameInBodyDataset = (body) => {
+  if (body.dataset.filename) {
+    const filename = body.dataset.filename;
+    body.dataset.filename = filename;
+    return Promise.resolve([filename, body]);
   }
-  body.dataset.filename = filename;
-  return [filename, body];
+
+  // Need filename from modal
+  return new Promise((resolve) => {
+    showModalAndGetFilename("filename?", function (filenameFromModal) {
+      body.dataset.filename = filenameFromModal;
+      resolve([filenameFromModal, body]);
+    });
+  });
 };
 
-function storeValueInIndexedDB(dbName, storeName, key, value) {
-  const request = indexedDB.open(dbName, 1);
+const filenameToSelectedBodyFromSelection = () => {
+  const selection = window.getSelection() + "";
 
-  request.onupgradeneeded = (event) => {
-    console.info("Creating object store in indexeddb");
-    const db = event.target.result;
-    db.createObjectStore(storeName);
-  };
+  if (selection.length > 0) {
+    // Selection exists, proceed (synchronous)
+    const filename = selection;
+    const body = document.getElementById(weave.internal.bodyClicks[1]);
+    body.dataset.filename = filename;
+    return Promise.resolve([filename, body]); // Wrap in a resolved promise
+  }
 
-  request.onerror = (event) => {
-    console.error("Error opening database:", event);
-  };
+  // No selection - asynchronous part
+  const body = document.getElementById(weave.internal.bodyClicks[0]);
 
-  request.onsuccess = (event) => {
-    const db = event.target.result;
-    const transaction = db.transaction(storeName, "readwrite");
-
-    transaction.onerror = (event) => {
-      console.error("Error storing value:", event);
-    };
-
-    transaction.oncomplete = () => {
-      console.log("Value stored successfully in", dbName, storeName);
-    };
-
-    const objectStore = transaction.objectStore(storeName);
-    objectStore.put(value, key);
-  };
-}
+  // This block will be reused…
+  return setFilenameInBodyDataset(body);
+};
 
 const isave = {
   text: ["isave"],
   action: (ev) => {
-    const [filename, body] = filenameToSelectedBodyFromSelection();
-    const saveString = getBasicSaveString(body);
-    set(filename, saveString)
-      .then(() => console.log("Data saved in IndexedDb"))
-      .catch((err) => console.log("Saving in IndexedDb failed", err));
+    ev.preventDefault(); // To allow focusing on input
+    filenameToSelectedBodyFromSelection()
+      .then(([filename, body]) => {
+        const saveString = getBasicSaveString(body);
+        set(filename, saveString)
+          .then(() => console.log("Data saved in IndexedDb"))
+          .catch((err) => console.log("Saving in IndexedDb failed", err));
+      })
+      .catch((error) => {
+        console.error("Error resolving the filename promise", error);
+      });
   },
   description: "Save a pane to IndexedDB",
+  el: "u",
+};
+
+function processFiles() { 
+  let allFiles = [];
+  let promiseChain = Promise.resolve(); // Start with a resolved promise
+
+  for (const bodyId of weave.internal.group) {
+    const body = document.getElementById(bodyId);
+    // Chain promises sequentially
+    promiseChain = promiseChain.then(() => { 
+      body.closest(".body-container").classList.add("highlighted")
+      return setFilenameInBodyDataset(body).then(([filename, _]) => {
+        const saveString = getBasicSaveString(body);
+        allFiles.push(body.dataset.filename);
+        body.closest(".body-container").classList.remove("highlighted")
+        return set(filename, saveString); 
+      });
+    }).then(() => {
+      console.log("Data saved in IndexedDb");
+    }).catch((err) => {
+      console.error("Saving in IndexedDb failed", err);
+    });
+  }
+
+  return promiseChain.then(() => {
+    return allFiles; 
+  });
+}
+
+
+const gsave = {
+  text: ["gsave"],
+  action: (ev) => {
+    ev.preventDefault(); // To allow focusing on input
+    if (!weave.internal.group || weave.internal.group.size == 0) {
+      return;
+    }
+    // First make sure all panes are saved properly in processFiles
+    processFiles().then((allFiles) => {
+      showModalAndGetFilename("group name?", (groupname) => {
+        set(groupname, "g:" + allFiles.join("|"))
+          .then(() => console.log("Group data saved in IndexedDb"))
+          .catch((err) => console.log("Saving in IndexedDb failed", err));
+      });
+    })
+  },
+  description:
+    "Save a group of panes to IndexedDB. There is no equivalent for file though",
   el: "u",
 };
 
 const save = {
   text: ["save", "💾"],
   action: (ev) => {
-    const [filename, body] = filenameToSelectedBodyFromSelection();
-    const saveString = getBasicSaveString(body);
-    const downloadLink = document.createElement("a");
-    const fileData = "data:application/json;base64," + saveString;
-    console.log(saveString)
-    downloadLink.href = fileData;
-    downloadLink.download = filename;
-    downloadLink.click();
+    ev.preventDefault(); // To allow focusing on input
+    filenameToSelectedBodyFromSelection()
+      .then(([filename, body]) => {
+        const saveString = getBasicSaveString(body);
+        const downloadLink = document.createElement("a");
+        const fileData = "data:application/json;base64," + saveString;
+        console.log(saveString);
+        downloadLink.href = fileData;
+        downloadLink.download = filename;
+        downloadLink.click();
+      })
+      .catch((error) => {
+        console.error("Error resolving the filename promise", error);
+      });
   },
   description: "Save a pane to disk, you won't be choosing where though",
   el: "u",
