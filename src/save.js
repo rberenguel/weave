@@ -1,7 +1,15 @@
-export { gsave, isave, save, saveAll, saveAll_, serializeSaveData, showModalAndGetFilename };
+export {
+  gsave,
+  isave,
+  save,
+  saveAll,
+  saveAll_,
+  serializeSaveData,
+  showModalAndGetFilename,
+};
 
 import weave from "./weave.js";
-
+import { common } from "./commands_base.js";
 import { set } from "./libs/idb-keyval.js";
 
 const saveAll_ = {
@@ -42,7 +50,7 @@ function showModalAndGetFilename(placeholder, callback) {
   const modal = document.getElementById("modal");
   modal.appendChild(inp);
   modal.style.display = "block";
-  inp.focus()
+  inp.focus();
   inp.addEventListener("keydown", function (ev) {
     console.log(ev);
     if (ev.key === "Enter") {
@@ -50,7 +58,7 @@ function showModalAndGetFilename(placeholder, callback) {
       const filename = inp.value;
       callback(filename);
       modal.style.display = "none";
-      modal.innerHTML = ""
+      modal.innerHTML = "";
     }
   });
 }
@@ -92,6 +100,9 @@ const filenameToSelectedBodyFromSelection = () => {
 const isave = {
   text: ["isave"],
   action: (ev) => {
+    if (common(ev)) {
+      return;
+    }
     ev.preventDefault(); // To allow focusing on input
     filenameToSelectedBodyFromSelection()
       .then(([filename, body]) => {
@@ -99,6 +110,8 @@ const isave = {
         set(filename, saveString)
           .then(() => console.log("Data saved in IndexedDb"))
           .catch((err) => console.log("Saving in IndexedDb failed", err));
+        info.innerHTML = "&#x1F4BE;";
+        info.classList.add("fades");
       })
       .catch((error) => {
         console.error("Error resolving the filename promise", error);
@@ -108,37 +121,42 @@ const isave = {
   el: "u",
 };
 
-function processFiles() { 
+function processFiles() {
   let allFiles = [];
   let promiseChain = Promise.resolve(); // Start with a resolved promise
 
   for (const bodyId of weave.internal.group) {
     const body = document.getElementById(bodyId);
     // Chain promises sequentially
-    promiseChain = promiseChain.then(() => { 
-      body.closest(".body-container").classList.add("highlighted")
-      return setFilenameInBodyDataset(body).then(([filename, _]) => {
-        const saveString = getBasicSaveString(body);
-        allFiles.push(body.dataset.filename);
-        body.closest(".body-container").classList.remove("highlighted")
-        return set(filename, saveString); 
+    promiseChain = promiseChain
+      .then(() => {
+        body.closest(".body-container").classList.add("highlighted");
+        return setFilenameInBodyDataset(body).then(([filename, _]) => {
+          const saveString = getBasicSaveString(body);
+          allFiles.push(body.dataset.filename);
+          body.closest(".body-container").classList.remove("highlighted");
+          return set(filename, saveString);
+        });
+      })
+      .then(() => {
+        console.log("Data saved in IndexedDb");
+      })
+      .catch((err) => {
+        console.error("Saving in IndexedDb failed", err);
       });
-    }).then(() => {
-      console.log("Data saved in IndexedDb");
-    }).catch((err) => {
-      console.error("Saving in IndexedDb failed", err);
-    });
   }
 
   return promiseChain.then(() => {
-    return allFiles; 
+    return allFiles;
   });
 }
-
 
 const gsave = {
   text: ["gsave"],
   action: (ev) => {
+    if (common(ev)) {
+      return;
+    }
     ev.preventDefault(); // To allow focusing on input
     if (!weave.internal.group || weave.internal.group.size == 0) {
       return;
@@ -149,8 +167,10 @@ const gsave = {
         set(groupname, "g:" + allFiles.join("|"))
           .then(() => console.log("Group data saved in IndexedDb"))
           .catch((err) => console.log("Saving in IndexedDb failed", err));
+        info.innerHTML = "&#x1F4BE;";
+        info.classList.add("fades");
       });
-    })
+    });
   },
   description:
     "Save a group of panes to IndexedDB. There is no equivalent for file though",
@@ -160,6 +180,9 @@ const gsave = {
 const save = {
   text: ["save", "💾"],
   action: (ev) => {
+    if (common(ev)) {
+      return;
+    }
     ev.preventDefault(); // To allow focusing on input
     filenameToSelectedBodyFromSelection()
       .then(([filename, body]) => {

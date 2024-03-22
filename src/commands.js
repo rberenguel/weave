@@ -36,6 +36,181 @@ weave.idb = {
   set: set,
 };
 
+function iterateDOM(node) {
+  console.log(node);
+  // The generated structures are never more than 2 levels deep, seems, for now
+  let generated = []
+  for (const child of node.childNodes) {
+    //iterateDOM(child);
+    console.log(child)
+    console.log(child.nodeName)
+    console.log(child.textContent)
+    if(child.nodeName === "#text"){
+      const text = child.textContent
+      //if(text.trim() === ""){
+      //  continue
+      //} else {
+        generated.push(text)
+      //}
+      continue
+    }
+    if(child.classList.contains("wrap")){
+      const button = child.children[0]
+      const node = button.nodeName
+      const action = button.dataset.action
+      const text = button.innerText
+      const md = `\`[div] .wrap ${node} .alive ${action} ${text}\``
+      console.log(md)
+      generated.push(md)
+      continue
+    }
+    if(child.nodeName === "BR"){
+      generated.push("\n") // This might be a stretch
+      generated.push("<br/>")
+      generated.push("\n") // This might be a stretch
+    }
+    if(child.nodeName === "hr"){
+      generated.push("\n") // This might be a stretch
+      generated.push("<hr/>")
+      generated.push("\n") // This might be a stretch
+    }
+    if(child.nodeName === "DIV" && child.classList.length === 0){
+      console.info("Recursing DOM at empty div")
+      const md = iterateDOM(child)
+      generated.push(md)
+    }
+    if(child.nodeName === "SPAN" && child.classList.length === 0){
+      console.info("Recursing DOM at unexpected span")
+      const md = iterateDOM(child)
+      generated.push(md)
+    }
+    if(child.classList.contains("dynamic-div")){
+      const text = child.innerText
+      const md = `\`[div] .dynamic-div ${text}\``
+      generated.push(md)
+      generated.push("\n")
+      console.log(md)
+    }
+  }
+  return generated.flat(Infinity)
+}
+
+const divBlock = "[div]"
+
+const parseDiv = (divData) => {
+  console.info(`divdata: ${divData}`)
+  if(!divData.startsWith(divBlock)){
+    return divData // This eventually should create a textNode for code blocks
+  }
+  const splits = divData.replace(divBlock, "").split(" ").filter(n => n.length>0)
+  console.log(splits)
+  const klass = splits[0]
+  if(klass === ".wrap") {
+    console.log("handling a wrap")
+    const div = document.createElement("div")
+    div.classList.add("wrap")
+    const nodeType = splits[1]
+    const node = document.createElement(nodeType)
+    node.classList.add("alive") // TODO Why do I keep alive?
+    node.dataset.action = splits[3]
+    node.innerText = splits[4]
+    div.appendChild(node)
+    return div
+  }
+  if(klass === ".dynamic-div"){
+    console.log("handling a dynamic div")
+    const div = document.createElement("div")
+    div.classList.add("dynamic-div")
+    div.innerText = splits[1]
+    return div
+  }
+  console.log("Retuning with nothing, input was")
+  console.log(divData)
+  return
+}
+
+const parseIntoWrapper = (text, body) => {
+  body.innerHTML = ""
+  parseInto(text, body)
+}
+
+const parseInto = (text, body) => {
+  console.log(`-------------- Parsing "${text}"`)
+  const lines = text.split("\n")
+  for(const line of lines){
+    if(line == "<br/>"){
+      body.appendChild(document.createElement("br"))
+      console.log("br")
+      continue
+    }
+    if(line == "<hr/>"){
+      body.appendChild(document.createElement("hr"))
+      console.log("hr")
+      continue
+    }
+    // Ignoring code blocks for now, this can go in parsediv
+    const [simple, hasDiv] = parseTillTick(line)
+
+    if(!hasDiv){
+      //console.log(`No tick, LINE ${line}, DIV ${hasDiv}, SIMPLE "${simple}"`)
+      if(simple === null){
+        //if(line.trim().length == 0){
+
+        //} else {
+          const tn = document.createTextNode(line)
+          //tn.textContent = line//.trim()
+          body.appendChild(tn)
+          console.log(`tn with "${line}"`)
+        //}
+        
+      } else {
+        console.log(`is not null, ${simple}`)
+      }
+    }
+    //console.info(simple)
+    if(hasDiv){
+      const tn = document.createTextNode(simple)
+      //tn.textContent = line//.trim()
+      body.appendChild(tn)
+      console.log(`tn (2) with "${simple}"`)
+      const [div, rest] = parseTillTick(hasDiv)
+      //console.log(`rest ${rest}`)
+      const divNode = parseDiv(div, body)
+      body.appendChild(divNode)
+      parseInto(rest, body)
+    }
+  }
+}
+
+const parseTillTick = (text) => {
+  const regex = /^(.*?)`(.*)$/s;  
+  const match = text.match(regex);
+  if(!match){
+    return [null, null]
+  }
+  if(match.length == 0){
+    return [null, null]
+  }
+  if(match.length == 1){
+    return [match[1], null]
+  }
+  return [match[1], match[2]]
+}
+
+const reparse = {
+  text: ["reparse"],
+  action: (ev) => {
+    if (common(ev)) {
+      return;
+    }
+    const body = document.getElementById(weave.internal.bodyClicks[0]);
+    parseIntoWrapper(iterateDOM(body).join(""), body)
+    wireEverything(weave.buttons(weave.root));
+  },
+  description: "Reparses the current panel through a fake markdown conversion",
+  el: "u",
+};
+
 const grouping = {
   text: ["group"],
   action: (ev) => {
@@ -612,6 +787,7 @@ const buttons = (parentId) => {
     grouping,
     gsave,
     gload,
+    reparse
   ];
 };
 
