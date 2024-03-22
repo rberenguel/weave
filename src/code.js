@@ -1,4 +1,4 @@
-export { id, eval_, sql };
+export { id, eval_, sql, wireEval };
 
 import { reset, common } from "./commands_base.js";
 
@@ -226,7 +226,7 @@ const observer = new MutationObserver((mutations) => {
     if (mutation.type === "childList" || mutation.type === "characterData") {
       const parent = mutation.target.parentElement;
       console.log(mutation.target.parentElement);
-      if (parent.classList.contains("wired")) {
+      if (parent && parent.classList.contains("wired")) {
         parent.classList.add("dirty");
         parent.classList.remove("error");
         parent.hover_title = "edited";
@@ -236,9 +236,12 @@ const observer = new MutationObserver((mutations) => {
 });
 
 const wireEval = (code) => {
+  console.info("Wiring eval for node: ")
+  console.info(code)
   code.eval = (content) => {
     const kind = code.dataset.kind;
-    console.log("wiring this node: ", code);
+    console.log("evaluating ", code);
+    console.log(kind)
     const src = code;
     src.classList.remove("dirty");
     src.classList.remove("error");

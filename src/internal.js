@@ -9,14 +9,17 @@ const hookBodies = (buttons) => {
   for (let body of weave.bodies()) {
     if (!body.clickAttached) {
       body.addEventListener("click", (ev) => {
+        console.log("Click handler on body")
+        console.log(ev.target)
+        if(ev.target.classList.contains("alive")){
+          return
+        }
+        reset()
         weave.internal.clickedId.unshift(body.id);
         console.log(body.closest(".body-container").classList)
         Array.from(
           document.getElementsByClassName("mildly-highlighted")
         ).forEach((e) => e.classList.remove("mildly-highlighted"));
-        body.closest(".body-container").classList.add("mildly-highlighted");
-        
-
         weave.internal.clickedId.length = 2;
         if (weave.internal.grouping) {
           if (weave.internal.group.has(body.id)) {
@@ -26,6 +29,8 @@ const hookBodies = (buttons) => {
             weave.internal.group.add(body.id);
             body.closest(".body-container").classList.add("selected");
           }
+        } else {
+          body.closest(".body-container").classList.add("mildly-highlighted");
         }
         if (!weave.internal.cancelShifting) {
           weave.internal.bodyClicks.unshift(body.id);
@@ -67,6 +72,7 @@ const hookBodies = (buttons) => {
         } else {
           if (!weave.internal.preventFolding) {
             body.classList.toggle("folded");
+            // TODO All these should be part of a method that is then reused when loading the folded state
             body.closest(".body-container").classList.toggle("folded-bc");
             if (body.classList.contains("folded")) {
               // Just folded everything. Need to preserve the height of the container before folding
@@ -75,14 +81,14 @@ const hookBodies = (buttons) => {
               body.closest(".body-container").style.height = "";
               interact(body.closest(".body-container")).resizable({
                 edges: { top: false, left: true, bottom: false, right: true },
-              });
+              }).draggable({autoscroll: false});
               //body.style.height = "1.5em";
             } else {
               body.closest(".body-container").style.height =
                 body.dataset.unfoldedHeight;
               interact(body.closest(".body-container")).resizable({
                 edges: { top: true, left: true, bottom: true, right: true },
-              });
+              }).draggable({autoscroll: true});
             }
           } else {
             weave.internal.preventFolding = false;
@@ -121,6 +127,7 @@ const wireButtons = (buttons) => (event) => {
   for (let button of buttons) {
     if (button.text.includes(`${selectedText}`)) {
       if (button.creator) {
+        event.preventDefault();
         // An override to have autoformatted selections
         button.creator();
         return;
@@ -140,6 +147,7 @@ const wireButtons = (buttons) => (event) => {
     div.addEventListener("mousedown", result.action);
     div.alive = true;
     node.alive = true;
+    // TODO I don't have all this prevention when I rewire everything?
     div.addEventListener("click", (ev) => {
       ev.preventDefault();
       ev.stopPropagation();

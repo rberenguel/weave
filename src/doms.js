@@ -1,6 +1,6 @@
 export { createPanel, zwsr, pad, wrap, prefix, postfix, divWithDraggableHandle };
 import { hookBodies, hookBody } from "./internal.js";
-
+import { manipulation } from "./panel.js";
 // TODO: I think I want to be able to move panels instead of drag-and-drop.
 
 // I use this separator in many places
@@ -35,32 +35,37 @@ const divWithDraggableHandle = () => {
   return [div, handle];
 };
 
+const toTop = (b) => () => {
+  Array.from(weave.containers()).forEach((b) => {
+    b.classList.remove("on-top");
+  });
+  b.classList.add("on-top");
+};
+
 const createPanel = (parentId, id, buttons, weave) => {
   const bodyContainer = document.createElement("div");
   bodyContainer.classList.add("body-container");
   bodyContainer.parentId = parentId;
+
   interact(bodyContainer).resizable({
     edges: { left: true, right: true, bottom: true, top: true },
     // TODO There is something failing in resize
     listeners: {
       move(event) {
         let target = event.target;
-        const current = target.getBoundingClientRect()
-        let x = parseFloat(target.dataset.x) || current.x;
-        let y = parseFloat(target.dataset.y) || current.y;
-        // TODO fix vars and data-x
-        // update the element's style
-        target.style.width = event.rect.width + "px";
-        target.style.height = event.rect.height + "px";
-
+        toTop(target)()
+        let x = manipulation.get(target, manipulation.fields.kX)
+        let y = manipulation.get(target, manipulation.fields.kY)
+        manipulation.set(target, manipulation.fields.kWidth, event.rect.width)
+        manipulation.set(target, manipulation.fields.kHeight, event.rect.height)
+        manipulation.resize(target)
         // translate when resizing from top or left edges
         x += event.deltaRect.left;
         y += event.deltaRect.top;
-
-        target.style.transform = "translate(" + x + "px," + y + "px)";
-
-        target.setAttribute("data-x", x);
-        target.setAttribute("data-y", y);
+        console.log(x, y)
+        manipulation.set(target, manipulation.fields.kX, x)
+        manipulation.set(target, manipulation.fields.kY, y)
+        manipulation.reposition(target)
       },
     },
     modifiers: [
@@ -70,34 +75,19 @@ const createPanel = (parentId, id, buttons, weave) => {
     ],
     inertia: false,
   });
-
-  //const handle = document.createElement("div");
-  //handle.classList.add("panel-handle");
-  //bodyContainer.appendChild(handle);
-  //setupDragging(bodyContainer, handle);
-  // TODO: this needs a test
-
-  /*let pos = {
-    x: 0, y: 0
-  }*/
   if (id != "b0") {
     const prevContainer = document
       .getElementById("b" + (weave.bodies().length - 1))
       .closest(".body-container");
     // TODO with datasets
-    var x = parseFloat(prevContainer.getAttribute("data-x")) || 0;
-    var y = parseFloat(prevContainer.getAttribute("data-y")) || 0;
-    bodyContainer.dataset.x = x + 10;
-    bodyContainer.dataset.y = y + 10;
-    bodyContainer.style.transform =
-      "translate(" +
-      bodyContainer.dataset.x +
-      "px, " +
-      bodyContainer.dataset.y +
-      "px)";
+    let x = manipulation.get(prevContainer, manipulation.fields.kX)
+    let y = manipulation.get(prevContainer, manipulation.fields.kY)
+    manipulation.set(bodyContainer, manipulation.fields.kX, x + 10)
+    manipulation.set(bodyContainer, manipulation.fields.kY, y + 10)
+    manipulation.reposition(bodyContainer)
+
   } else {
-    bodyContainer.dataset.x = 0;
-    bodyContainer.dataset.y = 0;
+    
   }
   const betterHandle = document.createElement("div");
   betterHandle.classList.add("better-handle");
@@ -123,7 +113,10 @@ const createPanel = (parentId, id, buttons, weave) => {
         ".div-dnd-placeholder"
       );
       const draggedElement = document.querySelector(".dragging");
-      if (!placeholder) {
+      if(!draggedElement){
+        return
+      }
+      if (!placeholder && draggedElement) {
         placeholder = document.createElement("div");
         placeholder.classList.add("div-dnd-placeholder");
         const bcr = draggedElement.getBoundingClientRect();
@@ -152,18 +145,21 @@ const createPanel = (parentId, id, buttons, weave) => {
         childMap[mid] = child
       }
       
-      if(placeholder.parentNode){
+      if(placeholder && placeholder.parentNode){
         placeholder.parentNode.removeChild(placeholder);
       }
       const clearStyles = () => {
-        placeholder.classList.remove("dragging");
-        placeholder.style.transform = "";
+        if(placeholder){
+          placeholder.classList.remove("dragging");
+          placeholder.style.transform = "";
+        }
       }        
       const appendOn = (ancestor) => {
         clearStyles()
         ancestor.appendChild(placeholder)
       }
-      const sortedKeys = Array.from(Object.keys(childMap)).map(e => +e).sort();
+      const sortedKeys = Array.from(Object.keys(childMap)).map(e => parseFloat(e)).sort((a, b) => a - b);
+      console.log(sortedKeys)
       if(sortedKeys.length == 0){
         appendOn(ev.target.querySelector(".body"))
         return
@@ -178,6 +174,8 @@ const createPanel = (parentId, id, buttons, weave) => {
         const key = sortedKeys[i]
         if(key > dropY){
           clearStyles()
+          console.log("dropping placeholder before:")
+          console.log(childMap[key])
           childMap[key].parentNode.insertBefore(placeholder, childMap[key]);
           return
         }
@@ -247,39 +245,6 @@ const createPanel = (parentId, id, buttons, weave) => {
         clearStyles()
         childMap[key].parentNode.appendChild(ev.relatedTarget);
         return
-        /*
-        // Iterate through divA's children
-        let appended = false
-        for (const child of ev.target.querySelector(".body").children) {
-          const childRect = child.getBoundingClientRect();
-          // Check if the drop coordinates are within the child's boundaries
-          if (
-            dropX >= childRect.left &&
-            dropX <= childRect.right &&
-            dropY >= childRect.top &&
-            dropY <= childRect.bottom
-          ) {
-            //AAAAA
-            ev.relatedTarget.parentNode.removeChild(ev.relatedTarget);
-            ev.relatedTarget.classList.remove("dragging");
-            ev.relatedTarget.style.transform = "";
-            if (dropY > childRect.top + childRect.height / 2) {
-              child.parentNode.insertBefore(ev.relatedTarget, child.nextSibling);
-            } else {
-              child.parentNode.insertBefore(ev.relatedTarget, child);
-            }
-            appended = true
-            break;
-          }
-        }
-        if(!appended){
-        ev.relatedTarget.parentNode.removeChild(ev.relatedTarget);
-        ev.relatedTarget.classList.remove("dragging");
-        ev.relatedTarget.style.transform = "";
-        ev.target.querySelector(".body").appendChild(ev.relatedTarget)
-        }
-        */
-        //ev.target.querySelector(".body").appendChild(ev.relatedTarget);
       } 
     },
   })
@@ -288,12 +253,6 @@ const createPanel = (parentId, id, buttons, weave) => {
     allowFrom: betterHandle,
     ignoreFrom: body,
     inertia: true,
-    /*modifiers: [
-      interact.modifiers.restrictRect({
-        restriction: 'parent',
-        //endOnly: true
-      })
-    ],*/
     autoscroll: true,
     listeners: {
 
@@ -302,31 +261,25 @@ const createPanel = (parentId, id, buttons, weave) => {
         console.log(ev);
       },
       move(event) {
-        let x = (parseFloat(bodyContainer.dataset.x) || 0) + event.dx;
-        let y = (parseFloat(bodyContainer.dataset.y) || 0) + event.dy;
-        event.target.style.transform = `translate(${x}px, ${y}px)`;
-        bodyContainer.dataset.x = x;
-        bodyContainer.dataset.y = y;
 
-        // Reflow for scrollbars when moving far right or bottom
-        /*bodyContainer.style.display = 'none'; // Briefly hide 
-        bodyContainer.offsetHeight; // Force reflow 
-        bodyContainer.style.display = '';*/
+        let x = manipulation.get(bodyContainer, manipulation.fields.kX)
+        let y = manipulation.get(bodyContainer, manipulation.fields.kY)
+        x += event.dx;
+        y += event.dy;
+        console.log(x, y)
+        manipulation.set(bodyContainer, manipulation.fields.kX, x)
+        manipulation.set(bodyContainer, manipulation.fields.kY, y)
+        manipulation.reposition(bodyContainer)
       },
     },
   });
   // TODO: this might be better in weave directly
-  const toTop = (e) => {
-    Array.from(weave.containers()).forEach((b) => {
-      b.classList.remove("on-top");
-    });
-    bodyContainer.classList.add("on-top");
-  };
-  betterHandle.addEventListener("click", toTop);
-  bodyContainer.addEventListener("click", toTop);
+  betterHandle.addEventListener("click", toTop(bodyContainer));
+  bodyContainer.addEventListener("click", toTop(bodyContainer));
   document.getElementById(parentId).appendChild(bodyContainer);
-  hookBodies(buttons); // This wires all buttons
-  hookBody(body); // This wires all the keys
+  hookBodies(buttons); // TODO fix this This wires all buttons 
+  hookBody(body); //TODO fix this  This wires all the keys
+  manipulation.forcePositionToReality(bodyContainer)
 };
 
 // Uh, this may screw moving divs, actually… Let's try to disable it

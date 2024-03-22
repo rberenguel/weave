@@ -9,6 +9,7 @@ export {
 
 import weave from "./weave.js";
 import { createPanel } from "./doms.js";
+import { wireEval } from "./code.js";
 
 const getClosestBodyContainer = (element) => {
   let currentParent = element.parentNode;

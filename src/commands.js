@@ -1,4 +1,4 @@
-export { buttons };
+export { buttons, loadAllFromGroup };
 
 import weave from "./weave.js";
 import {
@@ -16,15 +16,17 @@ import {
   showModalAndGetFilename,
 } from "./save.js";
 import { addGoogFont } from "./load.js";
-import { draggy } from "./betterDragging.js";
+
 import { configLevels } from "./common.js";
 import { jazz } from "./jazz.js";
 import { GuillotineJS } from "./guillotine.js";
+import { draggy } from "./betterDragging.js";
 import { wireEverything } from "./load.js";
 
 import { id, eval_, sql } from "./code.js";
 import { get, keys, del, set, entries } from "./libs/idb-keyval.js";
-
+import { parseIntoWrapper, iterateDOM, toMarkdown } from "./parser.js";
+import { manipulation } from "./panel.js";
 weave.idb = {
   keys: () => {
     keys().then((keys) => (weave.idb.allKeys = keys));
@@ -36,166 +38,8 @@ weave.idb = {
   set: set,
 };
 
-function iterateDOM(node) {
-  console.log(node);
-  // The generated structures are never more than 2 levels deep, seems, for now
-  let generated = []
-  for (const child of node.childNodes) {
-    //iterateDOM(child);
-    console.log(child)
-    console.log(child.nodeName)
-    console.log(child.textContent)
-    if(child.nodeName === "#text"){
-      const text = child.textContent
-      //if(text.trim() === ""){
-      //  continue
-      //} else {
-        generated.push(text)
-      //}
-      continue
-    }
-    if(child.classList.contains("wrap")){
-      const button = child.children[0]
-      const node = button.nodeName
-      const action = button.dataset.action
-      const text = button.innerText
-      const md = `\`[div] .wrap ${node} .alive ${action} ${text}\``
-      console.log(md)
-      generated.push(md)
-      continue
-    }
-    if(child.nodeName === "BR"){
-      generated.push("\n") // This might be a stretch
-      generated.push("<br/>")
-      generated.push("\n") // This might be a stretch
-    }
-    if(child.nodeName === "hr"){
-      generated.push("\n") // This might be a stretch
-      generated.push("<hr/>")
-      generated.push("\n") // This might be a stretch
-    }
-    if(child.nodeName === "DIV" && child.classList.length === 0){
-      console.info("Recursing DOM at empty div")
-      const md = iterateDOM(child)
-      generated.push(md)
-    }
-    if(child.nodeName === "SPAN" && child.classList.length === 0){
-      console.info("Recursing DOM at unexpected span")
-      const md = iterateDOM(child)
-      generated.push(md)
-    }
-    if(child.classList.contains("dynamic-div")){
-      const text = child.innerText
-      const md = `\`[div] .dynamic-div ${text}\``
-      generated.push(md)
-      generated.push("\n")
-      console.log(md)
-    }
-  }
-  return generated.flat(Infinity)
-}
-
-const divBlock = "[div]"
-
-const parseDiv = (divData) => {
-  console.info(`divdata: ${divData}`)
-  if(!divData.startsWith(divBlock)){
-    return divData // This eventually should create a textNode for code blocks
-  }
-  const splits = divData.replace(divBlock, "").split(" ").filter(n => n.length>0)
-  console.log(splits)
-  const klass = splits[0]
-  if(klass === ".wrap") {
-    console.log("handling a wrap")
-    const div = document.createElement("div")
-    div.classList.add("wrap")
-    const nodeType = splits[1]
-    const node = document.createElement(nodeType)
-    node.classList.add("alive") // TODO Why do I keep alive?
-    node.dataset.action = splits[3]
-    node.innerText = splits[4]
-    div.appendChild(node)
-    return div
-  }
-  if(klass === ".dynamic-div"){
-    console.log("handling a dynamic div")
-    const div = document.createElement("div")
-    div.classList.add("dynamic-div")
-    div.innerText = splits[1]
-    return div
-  }
-  console.log("Retuning with nothing, input was")
-  console.log(divData)
-  return
-}
-
-const parseIntoWrapper = (text, body) => {
-  body.innerHTML = ""
-  parseInto(text, body)
-}
-
-const parseInto = (text, body) => {
-  console.log(`-------------- Parsing "${text}"`)
-  const lines = text.split("\n")
-  for(const line of lines){
-    if(line == "<br/>"){
-      body.appendChild(document.createElement("br"))
-      console.log("br")
-      continue
-    }
-    if(line == "<hr/>"){
-      body.appendChild(document.createElement("hr"))
-      console.log("hr")
-      continue
-    }
-    // Ignoring code blocks for now, this can go in parsediv
-    const [simple, hasDiv] = parseTillTick(line)
-
-    if(!hasDiv){
-      //console.log(`No tick, LINE ${line}, DIV ${hasDiv}, SIMPLE "${simple}"`)
-      if(simple === null){
-        //if(line.trim().length == 0){
-
-        //} else {
-          const tn = document.createTextNode(line)
-          //tn.textContent = line//.trim()
-          body.appendChild(tn)
-          console.log(`tn with "${line}"`)
-        //}
-        
-      } else {
-        console.log(`is not null, ${simple}`)
-      }
-    }
-    //console.info(simple)
-    if(hasDiv){
-      const tn = document.createTextNode(simple)
-      //tn.textContent = line//.trim()
-      body.appendChild(tn)
-      console.log(`tn (2) with "${simple}"`)
-      const [div, rest] = parseTillTick(hasDiv)
-      //console.log(`rest ${rest}`)
-      const divNode = parseDiv(div, body)
-      body.appendChild(divNode)
-      parseInto(rest, body)
-    }
-  }
-}
-
-const parseTillTick = (text) => {
-  const regex = /^(.*?)`(.*)$/s;  
-  const match = text.match(regex);
-  if(!match){
-    return [null, null]
-  }
-  if(match.length == 0){
-    return [null, null]
-  }
-  if(match.length == 1){
-    return [match[1], null]
-  }
-  return [match[1], match[2]]
-}
+weave.internal.manipulation = manipulation;
+weave.internal.toMD = toMarkdown;
 
 const reparse = {
   text: ["reparse"],
@@ -204,7 +48,8 @@ const reparse = {
       return;
     }
     const body = document.getElementById(weave.internal.bodyClicks[0]);
-    parseIntoWrapper(iterateDOM(body).join(""), body)
+    const container = body.closest(".body-container");
+    parseIntoWrapper(toMarkdown(container), body);
     wireEverything(weave.buttons(weave.root));
   },
   description: "Reparses the current panel through a fake markdown conversion",
@@ -222,12 +67,17 @@ const grouping = {
       Array.from(document.getElementsByClassName("selected")).forEach((e) =>
         e.classList.remove("selected")
       );
+
+      info.innerHTML = "grouped";
+      info.classList.add("fades");
     } else {
       weave.internal.grouping = true;
       weave.internal.group = new Set();
+      info.innerHTML = "grouping";
+      info.classList.add("fades");
     }
   },
-  description: "Start GuillotineJS",
+  description: "Group panels",
   el: "u",
 };
 
@@ -296,6 +146,24 @@ const guillotine = {
     GuillotineJS(true);
   },
   description: "Start GuillotineJS",
+  el: "u",
+};
+
+const pin = {
+  text: ["pin"],
+  action: (ev) => {
+    if (common(ev)) {
+      return;
+    }
+    const body = document.getElementById(weave.internal.bodyClicks[0]);
+    const container = body.closest(".body-container");
+    manipulation.forcePositionToReality(container);
+    manipulation.forceSizeToReality(container);
+
+    // TODO(me) This is still pending discussion with myself
+    //config.mono = true;
+  },
+  description: "Pin to real position to fix a temporary problem",
   el: "u",
 };
 
@@ -372,15 +240,16 @@ const serif = {
   el: "u",
 };
 
-const newDoc = {
+const newSession = {
   text: ["new"],
   action: (ev) => {
     if (common(ev)) {
       return;
     }
-    body.innerHTML = "";
+    Array.from(document.getElementsByClassName("body-container")).map(e => e.remove())
+    weave.createPanel(weave.root, "b0", weave.buttons(weave.root), weave);
   },
-  description: "Create a new document (erasing the current one)",
+  description: "Erase everything, no confirmation",
   el: "u",
 };
 
@@ -511,6 +380,31 @@ const enterKeyDownEvent = new KeyboardEvent("keydown", {
   bubbles: false,
 });
 
+const loadAllFromGroup = (groupname) => {
+  get(groupname)
+    .then((groupcontent) => {
+      const files = groupcontent.substring(2).split("|");
+      let n = weave.bodies().length;
+      for (const filename of files) {
+        const bodyId = `b${n}`; // TODO NO, this is not good enough
+        createPanel(weave.root, bodyId, weave.buttons(weave.root), weave);
+        const body = document.getElementById(bodyId);
+        n += 1;
+        console.info(`Loading ${filename} from IndexedDB`);
+        get(filename).then((filecontent) => {
+          console.info("Loaded from IndexedDb");
+          //loadFromContent(atob(filecontent), filename, body);
+          parseIntoWrapper(decodeURIComponent(atob(filecontent)), body);
+          wireEverything(weave.buttons(weave.root));
+        });
+        //const container = body.closest(".body-container")
+
+        wireEverything(weave.buttons(weave.root));
+      }
+    })
+    .catch((err) => console.log("Loading group from IndexedDb failed", err));
+};
+
 const gload = {
   text: ["gload"],
   action: (ev) => {
@@ -522,42 +416,50 @@ const gload = {
         }
         const k = document.createTextNode(key);
         const div = document.createElement("div");
+        div.classList.add("hoverable");
         div.appendChild(k);
         const modal = document.getElementById("modal");
         modal.appendChild(div);
         div.addEventListener("click", (ev) => {
           const inp = document.querySelector("input.filename");
           inp.value = key;
-          modal.innerHTML = ""
+          modal.innerHTML = "";
           inp.dispatchEvent(enterKeyDownEvent);
         });
       }
       const hr = document.createElement("hr");
       modal.appendChild(hr);
       showModalAndGetFilename("group name?", (groupname) => {
-        get(groupname)
-          .then((groupcontent) => {
-            const files = groupcontent.substring(2).split("|");
-            let n = weave.bodies().length;
-            for (const filename of files) {
-              const bodyId = `b${n}`; // TODO NO, this is not good enough
-              createPanel(weave.root, bodyId, weave.buttons(weave.root), weave);
-              const body = document.getElementById(bodyId);
-              n += 1;
-              console.info(`Loading ${filename} from IndexedDB`);
-              get(filename).then((filecontent) => {
-                console.info("Loaded from IndexedDb");
-                loadFromContent(atob(filecontent), filename, body);
-              });
-            }
-          })
-          .catch((err) =>
-            console.log("Loading group from IndexedDb failed", err)
-          );
+        loadAllFromGroup(groupname);
       });
     });
+    ev.target.closest(".body-container").remove();
   },
   description: "Load a group of panes",
+  el: "u",
+};
+
+const idel = {
+  text: ["idel"],
+  action: (ev) => {
+    const body = document.getElementById(weave.internal.bodyClicks[0]);
+    entries().then((entries) => {
+      console.log(entries);
+      for (const [key, value] of entries) {
+        const k = document.createTextNode(key);
+        const div = document.createElement("div");
+        div.appendChild(k);
+        const modal = document.getElementById("modal");
+        modal.appendChild(div);
+        div.addEventListener("click", (ev) => {
+          del(key);
+        });
+      }
+      modal.style.display = "block";
+      // TODO dismiss modal in this case
+    });
+  },
+  description: "Delete stuff from IndexedDB",
   el: "u",
 };
 
@@ -566,20 +468,21 @@ const iload = {
   action: (ev) => {
     const body = document.getElementById(weave.internal.bodyClicks[0]);
     entries().then((entries) => {
-      console.log(entries)
+      console.log(entries);
       for (const [key, value] of entries) {
         if (value.startsWith("g:")) {
           continue;
         }
         const k = document.createTextNode(key);
         const div = document.createElement("div");
+        div.classList.add("hoverable");
         div.appendChild(k);
         const modal = document.getElementById("modal");
         modal.appendChild(div);
         div.addEventListener("click", (ev) => {
           const inp = document.querySelector("input.filename");
           inp.value = key;
-          modal.innerHTML = ""
+          modal.innerHTML = "";
           inp.dispatchEvent(enterKeyDownEvent);
         });
       }
@@ -589,7 +492,13 @@ const iload = {
         console.info(`Loading ${filename} from IndexedDB`);
         get(filename).then((filecontent) => {
           console.info("Loaded from IndexedDb");
-          loadFromContent(atob(filecontent), filename, body);
+          // Added forced reparsing
+          console.log(filecontent);
+          console.log(decodeURIComponent(filecontent));
+          console.log(decodeURIComponent(atob(filecontent)));
+          //loadFromContent(atob(filecontent), filename, body);
+          parseIntoWrapper(decodeURIComponent(atob(filecontent)), body);
+          wireEverything(weave.buttons(weave.root));
         });
       });
     });
@@ -626,6 +535,7 @@ const loadFromContent = (content, filename, body) => {
   }
 };
 
+// Kinda deprecated
 filePicker.addEventListener("change", (event) => {
   const file = event.target.files[0];
 
@@ -759,7 +669,7 @@ const buttons = (parentId) => {
     serif,
     fontup,
     fontdown,
-    newDoc,
+    newSession,
     print_,
     dark,
     light,
@@ -787,7 +697,9 @@ const buttons = (parentId) => {
     grouping,
     gsave,
     gload,
-    reparse
+    reparse,
+    idel,
+    pin,
   ];
 };
 

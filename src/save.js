@@ -11,14 +11,16 @@ export {
 import weave from "./weave.js";
 import { common } from "./commands_base.js";
 import { set } from "./libs/idb-keyval.js";
+import { toMarkdown } from "./parser.js";
 
 const saveAll_ = {
-  text: ["saveAll"],
+  text: ["saveall"],
   action: (ev) => {
     if (common(ev)) {
       return;
     }
-    saveAll();
+    processFiles();
+    //saveAll();
   },
   description:
     "Save the current changes and config in the URL, so it survives browser crashes",
@@ -100,17 +102,19 @@ const filenameToSelectedBodyFromSelection = () => {
 const isave = {
   text: ["isave"],
   action: (ev) => {
-    if (common(ev)) {
+    /*if (common(ev)) {
       return;
-    }
+    }*/
     ev.preventDefault(); // To allow focusing on input
+    ev.stopPropagation();
     filenameToSelectedBodyFromSelection()
       .then(([filename, body]) => {
-        const saveString = getBasicSaveString(body);
+        const container = body.closest(".body-container");
+        const saveString = btoa(encodeURIComponent(toMarkdown(container)));
         set(filename, saveString)
           .then(() => console.log("Data saved in IndexedDb"))
           .catch((err) => console.log("Saving in IndexedDb failed", err));
-        info.innerHTML = "&#x1F4BE;";
+        info.innerHTML = "Saved";
         info.classList.add("fades");
       })
       .catch((error) => {
@@ -124,15 +128,18 @@ const isave = {
 function processFiles() {
   let allFiles = [];
   let promiseChain = Promise.resolve(); // Start with a resolved promise
-
-  for (const bodyId of weave.internal.group) {
+  const targets =
+    weave.internal.group || Array.from(weave.bodies()).map((b) => b.id);
+  for (const bodyId of targets) {
     const body = document.getElementById(bodyId);
     // Chain promises sequentially
     promiseChain = promiseChain
       .then(() => {
         body.closest(".body-container").classList.add("highlighted");
         return setFilenameInBodyDataset(body).then(([filename, _]) => {
-          const saveString = getBasicSaveString(body);
+          //const saveString = getBasicSaveString(body);
+          const container = body.closest(".body-container");
+          const saveString = btoa(encodeURIComponent(toMarkdown(container)));
           allFiles.push(body.dataset.filename);
           body.closest(".body-container").classList.remove("highlighted");
           return set(filename, saveString);
@@ -147,6 +154,13 @@ function processFiles() {
   }
 
   return promiseChain.then(() => {
+    if (!weave.internal.group) {
+      set("weave:last-session", "g:" + allFiles.join("|"))
+        .then(() => console.log("Last session data saved in IndexedDB"))
+        .catch((err) =>
+          console.log("Last session data saving in IndexedDB failed", err)
+        );
+    }
     return allFiles;
   });
 }
@@ -186,7 +200,9 @@ const save = {
     ev.preventDefault(); // To allow focusing on input
     filenameToSelectedBodyFromSelection()
       .then(([filename, body]) => {
-        const saveString = getBasicSaveString(body);
+        //const saveString = getBasicSaveString(body);
+        const container = body.closest(".body-container");
+        const saveString = btoa(encodeURIComponent(toMarkdown(container)));
         const downloadLink = document.createElement("a");
         const fileData = "data:application/json;base64," + saveString;
         console.log(saveString);

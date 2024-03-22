@@ -29,7 +29,7 @@ body {
 }
 
 .on-top {
-  z-index: 1000;
+  z-index: 1000 !important;
 }
 
 .better-handle {
@@ -44,7 +44,7 @@ body {
 }
 
 .body-container {
-  position: relative;
+  position: fixed;
   touch-action: none;
   line-height: 1.5;
   font-weight: 100;
@@ -61,13 +61,14 @@ body {
      * */
   border: 1px solid var(--bright-orange);
   border-radius: 5px;
-  float: inline-start;
+  /* float: inline-start; */
   /*min-width: fit-content;
   min-height: fit-content;*/
   /*max-height: 95%;*/
   max-width: 95%;
   margin: 1em;
   box-sizing: border-box;
+  z-index: 1;
 }
 
 #modal {
@@ -117,6 +118,10 @@ body {
   0 0 10px 2px #cc6600cc, /* Smaller, brighter inner glow */
   0 0 30px 10px #cc660044, /* Larger, softer outer glow */
   0 0 50px 20px #cc660011; /* Even larger, faint glow */
+}
+
+.hoverable:hover {
+  font-weight: bold;
 }
 
 .mildly-highlighted {
@@ -321,14 +326,33 @@ svg {
   font-family: "Reforma1969";
   font-size: 100%;
 }
+
 #info {
   position: absolute;
   right: 2em;
   top: 2em;
   opacity: 1;
-  transition: opacity 1s ease-in-out;
+  transition: opacity 3s ease-in-out;
   z-index: 10000;
+  line-height: 1.5;
+  font-weight: 100;
+  min-height: fit-content;
+  min-width: fit-content;
+  overflow: auto;
+  font-family: "monoidregular" !important;
+  z-index: -10000;
 }
+
+.fades {
+  opacity: 0 !important;
+  background: var(--dark-background) !important;
+  border: 1px solid var(--bright-orange);
+  border-radius: 5px;
+  padding: 1em;
+  color: var(--gray-text) !important;
+  z-index: 10000 !important;
+}
+
 .alive {
   color: var(--dark-background);
   border-radius: 6px;
@@ -349,9 +373,6 @@ svg {
   font-size: 80%;
 }
 
-.fades {
-  opacity: 0 !important;
-}
 div.wrap {
   display: inline-block;
 }
