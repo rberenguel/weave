@@ -4,6 +4,7 @@ export { hookBodies, hookBody };
 import { reset } from "./commands_base.js";
 import { saveAll } from "./save.js";
 import { zwsr } from "./doms.js";
+import { unrawPane } from "./raw.js";
 
 const hookBodies = (buttons) => {
   for (let body of weave.bodies()) {
@@ -56,6 +57,7 @@ const hookBodies = (buttons) => {
     }
     if (!body.dblClickAttached) {
       body.parentElement.addEventListener("dblclick", (ev) => {
+        const container = body.closest(".body-container")
         if (ev.target === body || body.contains(ev.target)) {
           // This should be the body proper only
           return;
@@ -70,23 +72,27 @@ const hookBodies = (buttons) => {
           );
           return;
         } else {
+          if(container.raw){
+            unrawPane(body, container)
+            return
+          }
           if (!weave.internal.preventFolding) {
             body.classList.toggle("folded");
             // TODO All these should be part of a method that is then reused when loading the folded state
-            body.closest(".body-container").classList.toggle("folded-bc");
+            container.classList.toggle("folded-bc");
             if (body.classList.contains("folded")) {
               // Just folded everything. Need to preserve the height of the container before folding
               body.dataset.unfoldedHeight =
-                body.closest(".body-container").style.height;
-              body.closest(".body-container").style.height = "";
-              interact(body.closest(".body-container")).resizable({
+              container.style.height;
+              container.style.height = "";
+              interact(container).resizable({
                 edges: { top: false, left: true, bottom: false, right: true },
               }).draggable({autoscroll: false});
               //body.style.height = "1.5em";
             } else {
-              body.closest(".body-container").style.height =
+              container.style.height =
                 body.dataset.unfoldedHeight;
-              interact(body.closest(".body-container")).resizable({
+              interact(container).resizable({
                 edges: { top: true, left: true, bottom: true, right: true },
               }).draggable({autoscroll: true});
             }

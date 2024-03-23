@@ -5,9 +5,16 @@ import {
   createPanel,
   postfix,
   prefix,
-  divWithDraggableHandle,
 } from "./doms.js";
 import { common } from "./commands_base.js";
+import { configLevels } from "./common.js";
+import { wireEverything } from "./load.js";
+import { manipulation } from "./panel.js";
+import { parseIntoWrapper, toMarkdown } from "./parser.js";
+import { get, keys, del, set, entries } from "./libs/idb-keyval.js";
+
+// Buttons
+import { div } from "./dynamicdiv.js";
 import {
   saveAll_,
   save,
@@ -16,17 +23,11 @@ import {
   showModalAndGetFilename,
 } from "./save.js";
 import { addGoogFont } from "./load.js";
-
-import { configLevels } from "./common.js";
 import { jazz } from "./jazz.js";
 import { GuillotineJS } from "./guillotine.js";
-import { draggy } from "./betterDragging.js";
-import { wireEverything } from "./load.js";
-
 import { id, eval_, sql } from "./code.js";
-import { get, keys, del, set, entries } from "./libs/idb-keyval.js";
-import { parseIntoWrapper, iterateDOM, toMarkdown } from "./parser.js";
-import { manipulation } from "./panel.js";
+import { raw } from "./raw.js"
+
 weave.idb = {
   keys: () => {
     keys().then((keys) => (weave.idb.allKeys = keys));
@@ -40,6 +41,7 @@ weave.idb = {
 
 weave.internal.manipulation = manipulation;
 weave.internal.toMD = toMarkdown;
+
 
 const reparse = {
   text: ["reparse"],
@@ -81,38 +83,6 @@ const grouping = {
   el: "u",
 };
 
-const div = {
-  text: ["div"],
-  action: (ev) => {
-    const selection = window.getSelection();
-    const htmlContainer = document.createElement("div");
-    htmlContainer.appendChild(selection.getRangeAt(0).cloneContents());
-    const selectedHTML = htmlContainer.innerHTML + "";
-    console.log(`Wiring div`);
-    let range = selection.getRangeAt(0);
-    const [div, handle] = divWithDraggableHandle();
-    div.classList.add("dynamic-div");
-    div.innerHTML = selectedHTML;
-
-    draggy(div);
-    // The following is to remove the phantom divs that can appear when editing in a contenteditable.
-    // I mighta s well do this anywhere I manupulate selections too
-    // TODO this might backfire if the selection for some reason picks up something else! Test this thing
-    const selectionParent = range.commonAncestorContainer.parentNode;
-    if (
-      selectionParent.nodeName === "DIV" &&
-      selectionParent.classList.length == 0
-    ) {
-      selectionParent.remove();
-    }
-    range.deleteContents();
-    range.insertNode(div);
-    // Either I do inline-block and postfix or don't postfix
-    postfix(div);
-    htmlContainer.remove();
-    //addListeners(handle, div, "dynamic-div");
-  },
-};
 
 const hr = {
   text: ["---"],
@@ -381,7 +351,8 @@ const enterKeyDownEvent = new KeyboardEvent("keydown", {
 });
 
 const loadAllFromGroup = (groupname) => {
-  get(groupname)
+  let throwing
+  return get(groupname)
     .then((groupcontent) => {
       const files = groupcontent.substring(2).split("|");
       let n = weave.bodies().length;
@@ -402,7 +373,12 @@ const loadAllFromGroup = (groupname) => {
         wireEverything(weave.buttons(weave.root));
       }
     })
-    .catch((err) => console.log("Loading group from IndexedDb failed", err));
+    .catch((err) => {
+      console.log("Loading group from IndexedDb failed", err);
+      throwing = err
+      console.log(throwing)
+      throw err
+    });
 };
 
 const gload = {
@@ -700,6 +676,7 @@ const buttons = (parentId) => {
     reparse,
     idel,
     pin,
+    raw
   ];
 };
 

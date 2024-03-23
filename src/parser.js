@@ -1,8 +1,11 @@
 export { parseIntoWrapper, iterateDOM, toMarkdown };
 
-import { draggy } from "./betterDragging.js";
-
 import { manipulation, panelFields } from "./panel.js";
+
+
+import { dynamicDiv } from "./dynamicdiv.js";
+
+
 
 const parseIntoWrapper = (text, body) => {
   console.info("Parsing: ");
@@ -143,7 +146,8 @@ function iterateDOM(node) {
     }
     if (child.classList.contains("dynamic-div")) {
       const text = child.innerText;
-      const md = `\`[div] .dynamic-div ${text}\``;
+      const allClasses = Array.from(child.classList).filter(c => c != "dynamic-div").map(c => `.${c}`).join(" ")
+      const md = `\`[div] .dynamic-div ${allClasses} ${text}\``;
       generated.push(md);
       generated.push("\n");
     }
@@ -185,11 +189,8 @@ const parseDiv = (divData) => {
     return div;
   }
   if (klass === ".dynamic-div") {
-    const div = document.createElement("div");
-    div.classList.add("dynamic-div");
-    div.innerText = splits.slice(1).join(" ");
-    draggy(div);
-    return div;
+    const text = splits.slice(1).join(" ")
+    return dynamicDiv(text)
   }
   // [div] .wired .code id=c1711131479729 kind=javascript evalString={{44 + 12}} value={56}`
   if (klass === ".wired") {

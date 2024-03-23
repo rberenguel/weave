@@ -1,6 +1,7 @@
 export { createPanel, zwsr, pad, wrap, prefix, postfix, divWithDraggableHandle };
 import { hookBodies, hookBody } from "./internal.js";
 import { manipulation } from "./panel.js";
+import { dndDynamicDiv } from "./dynamicdiv.js";
 // TODO: I think I want to be able to move panels instead of drag-and-drop.
 
 // I use this separator in many places
@@ -129,61 +130,12 @@ const createPanel = (parentId, id, buttons, weave) => {
         }
       }
       // here
-      const dropX = ev.dragEvent.client.x
-      const dropY = ev.dragEvent.client.y
-  
-      let childMap = {}
-      // The way I'm approaching this, sideways changes won't work.
-      // I could do something though
-      for(const child of ev.target.querySelector(".body").children) {
-        if(child.classList.contains("div-dnd-placeholder")){
-          continue
-        }
-        const childRect = child.getBoundingClientRect();
-        const mid = childRect.top + childRect.height / 2;
-        // In particular here. I could instead store an array if there are several in the same line
-        childMap[mid] = child
-      }
-      
       if(placeholder && placeholder.parentNode){
         placeholder.parentNode.removeChild(placeholder);
       }
-      const clearStyles = () => {
-        if(placeholder){
-          placeholder.classList.remove("dragging");
-          placeholder.style.transform = "";
-        }
-      }        
-      const appendOn = (ancestor) => {
-        clearStyles()
-        ancestor.appendChild(placeholder)
-      }
-      const sortedKeys = Array.from(Object.keys(childMap)).map(e => parseFloat(e)).sort((a, b) => a - b);
-      console.log(sortedKeys)
-      if(sortedKeys.length == 0){
-        appendOn(ev.target.querySelector(".body"))
-        return
-      }
-      if(sortedKeys[0] > dropY){
-        const key = sortedKeys[0]
-        clearStyles()
-        childMap[key].parentNode.insertBefore(placeholder, childMap[key]);
-        return
-      }
-      for(let i=0;i<sortedKeys.length;i++){
-        const key = sortedKeys[i]
-        if(key > dropY){
-          clearStyles()
-          console.log("dropping placeholder before:")
-          console.log(childMap[key])
-          childMap[key].parentNode.insertBefore(placeholder, childMap[key]);
-          return
-        }
-      }
-      const key = sortedKeys[sortedKeys.length-1]
-      clearStyles()
-      childMap[key].parentNode.appendChild(placeholder);
-      return
+      const dropX = ev.dragEvent.client.x
+      const dropY = ev.dragEvent.client.y
+      dndDynamicDiv(placeholder, ev.target.querySelector(".body"), dropY)
     },
     // TODO all this d-n-d shenanigans needs tests
     ondrop: (ev) => {
@@ -200,51 +152,9 @@ const createPanel = (parentId, id, buttons, weave) => {
         console.info("Dropping a magical div")
         const dropX = ev.dragEvent.client.x
         const dropY = ev.dragEvent.client.y
-
-        let childMap = {}
-        for(const child of ev.target.querySelector(".body").children) {
-          if(child.classList.contains("div-dnd-placeholder")){
-            continue
-          }
-          const childRect = child.getBoundingClientRect();
-          const mid = childRect.top + childRect.height / 2;
-          // In particular here. I could instead store an array if there are several in the same line
-          childMap[mid] = child
-        }
-        if(ev.relatedTarget.parentNode){
-          ev.relatedTarget.parentNode.removeChild(ev.relatedTarget);
-        }
-        const clearStyles = () => {
-          ev.relatedTarget.classList.remove("dragging");
-          ev.relatedTarget.style.transform = "";
-        }        
-        const appendOn = (ancestor) => {
-          clearStyles()
-          ancestor.appendChild(ev.relatedTarget)
-        }
-        const sortedKeys = Array.from(Object.keys(childMap)).map(e => +e).sort();
-        if(sortedKeys.length == 0){
-          appendOn(ev.target.querySelector(".body"))
-          return
-        }
-        if(sortedKeys[0] > dropY){
-          const key = sortedKeys[0]
-          clearStyles()
-          childMap[key].parentNode.insertBefore(ev.relatedTarget, childMap[key]);
-          return
-        }
-        for(let i=0;i<sortedKeys.length;i++){
-          const key = sortedKeys[i]
-          if(key > dropY){
-            clearStyles()
-            childMap[key].parentNode.insertBefore(ev.relatedTarget, childMap[key]);
-            return
-          }
-        }
-        const key = sortedKeys[sortedKeys.length-1]
-        clearStyles()
-        childMap[key].parentNode.appendChild(ev.relatedTarget);
-        return
+        const targetBody = ev.target.querySelector(".body")
+        const target = ev.relatedTarget
+        dndDynamicDiv(target, targetBody, dropY)
       } 
     },
   })

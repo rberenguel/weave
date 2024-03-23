@@ -170,6 +170,7 @@ z-index: 1000;
   border: 2px solid var(--bright-yellow) !important;
 }
 
+/* TODO This can go to trash */
 .dynamic-handle {
   position: relative;
   bottom: 0.8em;
@@ -198,6 +199,37 @@ z-index: 1000;
   padding-top: 0.1em;
   padding-bottom: 0.1em;
   padding-left:0.2em;
+}
+
+.dynamic-div.checked {
+  text-decoration: line-through;
+}
+
+/* Style the label to look like an unchecked checkbox */
+.task-label {
+  color: #c60;
+  padding: 0.2em 0.2em;
+  border-radius: 20px;
+  display: inline-block;
+  cursor: pointer;
+}
+
+/* Styles for the 'checked' state - add a fake checkbox */
+.task-label::before {
+  content: "";
+  display: inline-block;
+  width: 1em;
+  height: 1em;
+  margin-right: 0 .5em;
+  border: 2px solid #c60;
+  border-radius: 3px;
+  vertical-align: middle;
+}
+
+/* Styles when checked */
+.task-label.checked::before {
+  background-color: var(--bright-orange); /* Example: Green background */
+  color: white;
 }
 
 .panel-handle {

@@ -52,26 +52,42 @@ interact(document.body).draggable({
   },
 });
 
-document.body.addEventListener('wheel', (event) => {
+document.body.addEventListener("wheel", (event) => {
   const body = document.body;
+  if(event.target.id != "content"){
+    return
+  }
   let x = parseFloat(body.dataset.x || 0);
   let y = parseFloat(body.dataset.y || 0);
-  const zoomDelta = 0.01
-  const sign = Math.sign(event.deltaY)
-  const transformed = Math.log(Math.abs(event.deltaY))*zoomDelta
+  const zoomDelta = 0.01;
+  const sign = Math.sign(event.deltaY);
+  const transformed = Math.log(Math.abs(event.deltaY)) * zoomDelta;
   let scale = parseFloat(body.dataset.scale || 1);
-  if(sign < 1){
+  if (sign < 1) {
     scale = scale + transformed;
     body.style.transform = `translate(${x}px, ${y}px) scale(${scale})`;
   } else {
     scale = scale - transformed;
     body.style.transform = `translate(${x}px, ${y}px) scale(${scale})`;
   }
-  body.dataset.scale = scale
+  body.dataset.scale = scale;
 });
 
+console.log(gloadParam);
+
 if (gloadParam) {
-  loadAllFromGroup(gloadParam);
+  try {
+    loadAllFromGroup(gloadParam)
+      .then()
+      .catch((err) => {
+        console.log("Could not load from url", err);
+        weave.createPanel(weave.root, "b0", weave.buttons(weave.root), weave);
+
+        for (let body of weave.bodies()) {
+          weave.hookBody(body);
+        }
+      });
+  } catch (err) {}
 } else {
   try {
     loadAllFromGroup("weave:last-session");
