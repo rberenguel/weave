@@ -1,11 +1,11 @@
 export { parseIntoWrapper, iterateDOM, toMarkdown };
 
 import { manipulation, panelFields } from "./panel.js";
-
-
+import weave from "./weave.js";
+import { createPanel } from "./doms.js";
+import { iloadIntoBody } from "./loadymcloadface.js";
+import { toTop } from "./doms.js";
 import { dynamicDiv } from "./dynamicdiv.js";
-
-
 
 const parseIntoWrapper = (text, body) => {
   console.info("Parsing: ");
@@ -38,6 +38,135 @@ const parseIntoWrapper = (text, body) => {
   parseInto(rest.join("\n"), body);
 };
 
+const linkStateMachine = (line, body) => {
+  let accum = [],
+          linkText = [],
+          linkHref = [],
+          reference = [];
+        let inLinkText = false,
+          inLinkHref = false,
+          inReference = false,
+          closedReference = 0;
+        for (let i = 0; i < line.length; i++) {
+          const c = line[i];
+          if (c == "[") {
+            if (inLinkText) {
+              // We started a link, but actually got a reference. Correct and continue
+              inReference = true;
+              inLinkText = false;
+            } else {
+              // We are starting a link: emit whatever text we had up until now.
+              // TODO Yes, this is preventing having naked brackets.
+              inLinkText = true;
+              const tn = document.createTextNode(accum.join(""));
+              accum = [];
+              body.appendChild(tn);
+            }
+            continue;
+          }
+          if (c == "]") {
+            if (inLinkText && linkText.length > 0) {
+              inLinkText = false;
+              // We have finished the link text. We still don't emit
+              // anything though, we need to finish the link.
+            } else {
+              closedReference += 1;
+              if (closedReference == 2) {
+                inReference = false; // Reference finished, emit it
+                closedReference = 0
+                const link = document.createElement("a");
+                const href = reference.join("");
+                link.href = href;
+                link.innerText = href;
+                link.dataset.internal = true;
+                reference = [];
+                body.appendChild(link);
+                // TODO repetition
+                link.addEventListener("click", (ev) => {
+                  ev.preventDefault(); // Prevent default navigation
+                  ev.stopPropagation()
+                  const href = ev.target.getAttribute("href"); // To avoid issues with no-protocol
+                  if (JSON.parse(link.dataset.internal)) {
+                    const n = weave.bodies().length;
+                    const bodyId = `b${n}`; // TODO NO, this is not good enough
+                    createPanel(
+                      weave.root,
+                      bodyId,
+                      weave.buttons(weave.root),
+                      weave
+                    );
+                    const body = document.getElementById(bodyId);
+                    console.log(link);
+                    iloadIntoBody(href, body);
+                    toTop(body);
+                  } else {
+                    window.open(href, "_blank");
+                  }
+                });
+              }
+            }
+            continue;
+          }
+          if (c == "(" && linkText.length > 0) {
+            inLinkHref = true;
+            continue;
+          }
+          if (c == ")" && linkText.length > 0) {
+            inLinkHref = false;
+            // We finished a link, emit it
+            const link = document.createElement("a");
+            const href = linkHref.join("");
+            link.href = href;
+            link.innerText = linkText.join("");
+            link.dataset.internal = false;
+            linkText = [];
+            linkHref = [];
+            body.appendChild(link);
+            // TODO repetition
+            link.addEventListener("click", (ev) => {
+              ev.preventDefault(); // Prevent default navigation
+              ev.stopPropagation()
+              const href = ev.target.getAttribute("href"); // To avoid issues with no-protocol
+              if (JSON.parse(link.dataset.internal)) {
+                const n = weave.bodies().length;
+                const bodyId = `b${n}`; // TODO NO, this is not good enough
+                createPanel(
+                  weave.root,
+                  bodyId,
+                  weave.buttons(weave.root),
+                  weave
+                );
+                const body = document.getElementById(bodyId);
+                console.log(link);
+                iloadIntoBody(href, body);
+                toTop(body);
+              } else {
+                window.open(href, "_blank");
+              }
+            });
+            continue;
+          }
+          if (inLinkText) {
+            linkText.push(c);
+            continue;
+          }
+          if (inLinkHref) {
+            linkHref.push(c);
+            continue;
+          }
+          if (inReference) {
+            reference.push(c);
+            continue;
+          }
+          accum.push(c);
+        }
+        console.log("The accumulator at the end is");
+        console.log(accum);
+        const tn = document.createTextNode(accum.join(""));
+        accum = [];
+        body.appendChild(tn);
+}
+
 const parseInto = (text, body) => {
   const lines = text.split("\n");
   for (const line of lines) {
@@ -54,14 +183,18 @@ const parseInto = (text, body) => {
 
     if (!hasDiv) {
       if (simple === null) {
-        const tn = document.createTextNode(line);
-        body.appendChild(tn);
+        console.log(line);
+        // Here now I need to process links. Let's just inject a small state machine
+        linkStateMachine(line, body)
+        //const tn = document.createTextNode(line);
+        //body.appendChild(tn);
       } else {
       }
     }
     if (hasDiv) {
-      const tn = document.createTextNode(simple);
-      body.appendChild(tn);
+      linkStateMachine(simple, body)
+      //const tn = document.createTextNode(simple);
+      //body.appendChild(tn);
       const [div, rest] = parseTillTick(hasDiv);
       const divNode = parseDiv(div, body);
       body.appendChild(divNode);
@@ -93,9 +226,9 @@ const toMarkdown = (container) => {
     saveable.push(`- ${prop}: ${value}\n`);
   }
   saveable.push("-->\n");
-  const markdown = saveable.concat(content).join("")
-  console.info("Generated as markdown:")
-  console.info(markdown)
+  const markdown = saveable.concat(content).join("");
+  console.info("Generated as markdown:");
+  console.info(markdown);
   return markdown;
 };
 
@@ -140,13 +273,26 @@ function iterateDOM(node) {
       const md = iterateDOM(child);
       generated.push(md);
     }
+    if (child.nodeName === "A") {
+      if (JSON.parse(child.dataset.internal)) {
+        const href = child.getAttribute("href");
+        generated.push(`[[${href}]]`);
+      } else {
+        const href = child.getAttribute("href");
+        const text = child.innerText;
+        generated.push(`[${text}](${href})`);
+      }
+    }
     if (child.nodeName === "SPAN" && child.classList.length === 0) {
       const md = iterateDOM(child);
       generated.push(md);
     }
     if (child.classList.contains("dynamic-div")) {
       const text = child.innerText;
-      const allClasses = Array.from(child.classList).filter(c => c != "dynamic-div").map(c => `.${c}`).join(" ")
+      const allClasses = Array.from(child.classList)
+        .filter((c) => c != "dynamic-div")
+        .map((c) => `.${c}`)
+        .join(" ");
       const md = `\`[div] .dynamic-div ${allClasses} ${text}\``;
       generated.push(md);
       generated.push("\n");
@@ -189,8 +335,8 @@ const parseDiv = (divData) => {
     return div;
   }
   if (klass === ".dynamic-div") {
-    const text = splits.slice(1).join(" ")
-    return dynamicDiv(text)
+    const text = splits.slice(1).join(" ");
+    return dynamicDiv(text);
   }
   // [div] .wired .code id=c1711131479729 kind=javascript evalString={{44 + 12}} value={56}`
   if (klass === ".wired") {

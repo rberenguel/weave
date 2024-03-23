@@ -1,4 +1,4 @@
-export { createPanel, zwsr, pad, wrap, prefix, postfix, divWithDraggableHandle };
+export { createPanel, zwsr, pad, wrap, prefix, postfix, divWithDraggableHandle, toTop };
 import { hookBodies, hookBody } from "./internal.js";
 import { manipulation } from "./panel.js";
 import { dndDynamicDiv } from "./dynamicdiv.js";
@@ -63,7 +63,6 @@ const createPanel = (parentId, id, buttons, weave) => {
         // translate when resizing from top or left edges
         x += event.deltaRect.left;
         y += event.deltaRect.top;
-        console.log(x, y)
         manipulation.set(target, manipulation.fields.kX, x)
         manipulation.set(target, manipulation.fields.kY, y)
         manipulation.reposition(target)
@@ -167,8 +166,6 @@ const createPanel = (parentId, id, buttons, weave) => {
     listeners: {
 
       leave: (ev) => {
-        console.log("elvis has left the building");
-        console.log(ev);
       },
       move(event) {
 
@@ -176,7 +173,6 @@ const createPanel = (parentId, id, buttons, weave) => {
         let y = manipulation.get(bodyContainer, manipulation.fields.kY)
         x += event.dx;
         y += event.dy;
-        console.log(x, y)
         manipulation.set(bodyContainer, manipulation.fields.kX, x)
         manipulation.set(bodyContainer, manipulation.fields.kY, y)
         manipulation.reposition(bodyContainer)

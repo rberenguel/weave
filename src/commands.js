@@ -12,6 +12,9 @@ import { wireEverything } from "./load.js";
 import { manipulation } from "./panel.js";
 import { parseIntoWrapper, toMarkdown } from "./parser.js";
 import { get, keys, del, set, entries } from "./libs/idb-keyval.js";
+import { enterKeyDownEvent } from "./commands_base.js";
+import { toTop } from "./doms.js";
+import { iload, iloadIntoBody } from "./loadymcloadface.js";
 
 // Buttons
 import { div } from "./dynamicdiv.js";
@@ -42,6 +45,86 @@ weave.idb = {
 weave.internal.manipulation = manipulation;
 weave.internal.toMD = toMarkdown;
 
+const link = {
+  text: ["link"],
+  action: (ev) => {
+    const selection = window.getSelection();
+    const text = selection + "";
+    let range = selection.getRangeAt(0);
+    entries().then((entries) => {
+      let keys = []
+      for (const [key, value] of entries) {
+        if (value.startsWith("g:")) {
+          continue;
+        }
+        keys.push(key)
+        const k = document.createTextNode(key);
+        const div = document.createElement("div");
+        div.classList.add("hoverable");
+        div.appendChild(k);
+        const modal = document.getElementById("modal");
+        modal.appendChild(div);
+        div.addEventListener("click", (ev) => {
+          const inp = document.querySelector("input.filename");
+          inp.value = key;
+          modal.innerHTML = "";
+          inp.dispatchEvent(enterKeyDownEvent);
+        });
+      }
+      const hr = document.createElement("hr");
+      modal.appendChild(hr);
+      showModalAndGetFilename("where to?", (destination) => {
+        const link = document.createElement("a")
+        link.title = text
+        link.innerText = text
+        let href
+        if(keys.includes(destination)){
+          href = destination
+          link.dataset.internal = true
+        } else {
+          if(destination.startsWith("http")){
+            href = destination
+          } else {
+            href = "https://" + destination
+          }
+          link.dataset.internal = false
+        }
+        link.href = href
+        range.deleteContents();
+        range.insertNode(link);
+        postfix(link);
+        link.addEventListener('click', (ev) => {
+          ev.preventDefault(); // Prevent default navigation
+          ev.stopPropagation()
+          const href = ev.target.getAttribute('href'); // To avoid issues with no-protocol
+          if(link.dataset.internal){
+            const n = weave.bodies().length;
+            const bodyId = `b${n}`; // TODO NO, this is not good enough
+            createPanel(weave.root, bodyId, weave.buttons(weave.root), weave);
+            const body = document.getElementById(bodyId);
+            console.log(link)
+            iloadIntoBody(href, body);
+            toTop(body)
+          } else {
+            window.open(href, '_blank');
+          }       
+        });
+      })
+    });
+    
+    
+    
+    /*
+    const selectionParent = range.commonAncestorContainer.parentNode;
+    if (
+      selectionParent.nodeName === "DIV" &&
+      selectionParent.classList.length == 0
+    ) {
+      selectionParent.remove();
+    }*/
+    
+  },
+};
 
 const reparse = {
   text: ["reparse"],
@@ -342,14 +425,6 @@ const load = {
 
 const filePicker = document.getElementById("filePicker");
 
-const enterKeyDownEvent = new KeyboardEvent("keydown", {
-  key: "Enter",
-  code: "Enter",
-  which: 13,
-  keyCode: 13,
-  bubbles: false,
-});
-
 const loadAllFromGroup = (groupname) => {
   let throwing
   return get(groupname)
@@ -439,49 +514,6 @@ const idel = {
   el: "u",
 };
 
-const iload = {
-  text: ["iload"],
-  action: (ev) => {
-    const body = document.getElementById(weave.internal.bodyClicks[0]);
-    entries().then((entries) => {
-      console.log(entries);
-      for (const [key, value] of entries) {
-        if (value.startsWith("g:")) {
-          continue;
-        }
-        const k = document.createTextNode(key);
-        const div = document.createElement("div");
-        div.classList.add("hoverable");
-        div.appendChild(k);
-        const modal = document.getElementById("modal");
-        modal.appendChild(div);
-        div.addEventListener("click", (ev) => {
-          const inp = document.querySelector("input.filename");
-          inp.value = key;
-          modal.innerHTML = "";
-          inp.dispatchEvent(enterKeyDownEvent);
-        });
-      }
-      const hr = document.createElement("hr");
-      modal.appendChild(hr);
-      showModalAndGetFilename("filename?", (filename) => {
-        console.info(`Loading ${filename} from IndexedDB`);
-        get(filename).then((filecontent) => {
-          console.info("Loaded from IndexedDb");
-          // Added forced reparsing
-          console.log(filecontent);
-          console.log(decodeURIComponent(filecontent));
-          console.log(decodeURIComponent(atob(filecontent)));
-          //loadFromContent(atob(filecontent), filename, body);
-          parseIntoWrapper(decodeURIComponent(atob(filecontent)), body);
-          wireEverything(weave.buttons(weave.root));
-        });
-      });
-    });
-  },
-  description: "Load a pane to disk, you won't be choosing where though",
-  el: "u",
-};
 
 const loadFromContent = (content, filename, body) => {
   console.log(decodeURIComponent(content));
@@ -676,7 +708,8 @@ const buttons = (parentId) => {
     reparse,
     idel,
     pin,
-    raw
+    raw,
+    link
   ];
 };
 

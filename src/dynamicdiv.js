@@ -32,7 +32,6 @@ const div = {
     range.insertNode(div);
     // Either I do inline-block and postfix or don't postfix
     postfix(div);
-    htmlContainer.remove();
     //addListeners(handle, div, "dynamic-div");
   },
 };
