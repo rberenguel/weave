@@ -9,9 +9,10 @@ export {
 };
 
 import weave from "./weave.js";
-import { common } from "./commands_base.js";
+import { common, enterKeyDownEvent } from "./commands_base.js";
 import { set } from "./libs/idb-keyval.js";
 import { toMarkdown } from "./parser.js";
+import { presentFiles } from "./loadymcloadface.js";
 
 const saveAll_ = {
   text: ["saveall"],
@@ -44,20 +45,42 @@ const getBasicSaveString = (body) => {
   return btoa(encodeURIComponent(savedata));
 };
 
-function showModalAndGetFilename(placeholder, callback) {
+// TODO: this is now preventing save!
+function showModalAndGetFilename(placeholder, fileContainer, prefix, callback) {
   const inp = document.createElement("input");
   inp.classList.add("dark");
-  inp.classList.add("filename");
+  inp.classList.add("search");
   inp.placeholder = placeholder;
+  const loadInput = document.createElement("input");
+  loadInput.classList.add("filename")
   const modal = document.getElementById("modal");
   modal.appendChild(inp);
+  modal.appendChild(loadInput)
   modal.style.display = "block";
   inp.focus();
   inp.addEventListener("keydown", function (ev) {
+    //ev.preventDefault();
+    const searchString = inp.value;
+    let results
+    try {
+      results = weave.internal.idx.search(prefix + searchString).map(r => r.ref)
+    } catch (err){
+      console.log("Lunar issue", err)
+      results = []
+    }
+    console.log(results)
+    presentFiles(results, fileContainer)
+    if (ev.key === "Enter") {
+      loadInput.value = searchString;
+      modal.innerHTML = "";
+      loadInput.dispatchEvent(enterKeyDownEvent);
+    }
+  })
+  loadInput.addEventListener("keydown", function (ev) {
     console.log(ev);
     if (ev.key === "Enter") {
       ev.preventDefault();
-      const filename = inp.value;
+      const filename = loadInput.value;
       callback(filename);
       modal.style.display = "none";
       modal.innerHTML = "";
@@ -65,7 +88,9 @@ function showModalAndGetFilename(placeholder, callback) {
   });
 }
 
-const setFilenameInBodyDataset = (body) => {
+// This is for saving
+
+const setFilenameInBodyDataset = (body, fileContainer) => {
   if (body.dataset.filename) {
     const filename = body.dataset.filename;
     body.dataset.filename = filename;
@@ -74,7 +99,7 @@ const setFilenameInBodyDataset = (body) => {
 
   // Need filename from modal
   return new Promise((resolve) => {
-    showModalAndGetFilename("filename?", function (filenameFromModal) {
+    showModalAndGetFilename("filename?", fileContainer,"name:", function (filenameFromModal) {
       body.dataset.filename = filenameFromModal;
       resolve([filenameFromModal, body]);
     });
@@ -94,9 +119,12 @@ const filenameToSelectedBodyFromSelection = () => {
 
   // No selection - asynchronous part
   const body = document.getElementById(weave.internal.bodyClicks[0]);
-
+  const modal = document.getElementById("modal");
+  const fileContainer = document.createElement("div")
+  fileContainer.id = "fileContainer"
+  modal.append(fileContainer)
   // This block will be reused…
-  return setFilenameInBodyDataset(body);
+  return setFilenameInBodyDataset(body, fileContainer);
 };
 
 const isave = {
@@ -176,8 +204,12 @@ const gsave = {
       return;
     }
     // First make sure all panes are saved properly in processFiles
+    const modal = document.getElementById("modal");
+    const fileContainer = document.createElement("div")
+    fileContainer.id = "fileContainer"
+    modal.append(fileContainer)
     processFiles().then((allFiles) => {
-      showModalAndGetFilename("group name?", (groupname) => {
+      showModalAndGetFilename("group name?", fileContainer, "name:",(groupname) => {
         set(groupname, "g:" + allFiles.join("|"))
           .then(() => console.log("Group data saved in IndexedDb"))
           .catch((err) => console.log("Saving in IndexedDb failed", err));

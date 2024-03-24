@@ -44,10 +44,11 @@ entries().then((entries) => {
       continue;
     }
     const text = decodeURIComponent(atob(value))
-    docs.push({name: filename, text: text})
+    docs.push({name: filename, filename: filename, text: text})
   }
   weave.internal.idx = lunr(function () {
-    this.ref('name')
+    this.ref('filename')
+    this.field('name')
     this.field('text')
   
     docs.forEach(function (doc) {

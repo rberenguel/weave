@@ -1,11 +1,7 @@
 export { buttons, loadAllFromGroup };
 
 import weave from "./weave.js";
-import {
-  createPanel,
-  postfix,
-  prefix,
-} from "./doms.js";
+import { createPanel, postfix, prefix } from "./doms.js";
 import { common } from "./commands_base.js";
 import { configLevels } from "./common.js";
 import { wireEverything } from "./load.js";
@@ -14,8 +10,8 @@ import { parseIntoWrapper, toMarkdown } from "./parser.js";
 import { get, keys, del, set, entries } from "./libs/idb-keyval.js";
 import { enterKeyDownEvent } from "./commands_base.js";
 import { toTop } from "./doms.js";
-import { iload, isearch, iloadIntoBody } from "./loadymcloadface.js";
-
+import { iload, iloadIntoBody } from "./loadymcloadface.js";
+import { presentFiles } from "./loadymcloadface.js";
 // Buttons
 import { div } from "./dynamicdiv.js";
 import {
@@ -29,7 +25,7 @@ import { addGoogFont } from "./load.js";
 import { jazz } from "./jazz.js";
 import { GuillotineJS } from "./guillotine.js";
 import { id, eval_, sql } from "./code.js";
-import { raw } from "./raw.js"
+import { raw } from "./raw.js";
 
 weave.idb = {
   keys: () => {
@@ -65,7 +61,6 @@ document.body.onclick = w.internal.triggerNotif
 
 */
 
-
 const headers = {
   matcher: /h[1-4]/,
   action: (match) => (ev) => {
@@ -73,55 +68,55 @@ const headers = {
     // TODO by how I process parsing, I don't allow nested stuff in headers
     const text = selection + "";
     const h = document.createElement(match);
-    h.innerText = text
+    h.innerText = text;
     let range = selection.getRangeAt(0);
- 
+
     range.deleteContents();
     range.insertNode(h);
   },
-  description: "Headers"
+  description: "Headers",
 };
 
-const getAllThingsAsStrings =  {
+const getAllThingsAsStrings = {
   text: ["pbcopy"],
   action: (ev) => {
-  entries().then((entries) => {
-    let lines = []
-    for (const [key, value] of entries) {
-      lines.push(`- ${key}: ${value}`)
-
-    }
-    navigator.clipboard.writeText(lines.join("\n"))
-  })
-}, 
-description: "Copy whole database to clipboard",
-el: "u",
-}
+    entries().then((entries) => {
+      let lines = [];
+      for (const [key, value] of entries) {
+        lines.push(`- ${key}: ${value}`);
+      }
+      navigator.clipboard.writeText(lines.join("\n"));
+    });
+  },
+  description: "Copy whole database to clipboard",
+  el: "u",
+};
 
 //weave.internal.getAll = getAllThingsAsStrings
-const dbdump =  {
+const dbdump = {
   text: ["dbdump"],
   action: (ev) => {
-  entries().then((entries) => {
-    let lines = []
-    for (const [key, value] of entries) {
-      lines.push(`- ${key}: ${value}`)
-
-    }
-  const fileBlob = new Blob([lines.join("\n")], { type: 'text/plain;charset=utf-8' });
-  const url = URL.createObjectURL(fileBlob);
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = "weave.db";
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
-  URL.revokeObjectURL(url);  
-  })
-}, 
-description: "Copy whole database to clipboard",
-el: "u",
-}
+    entries().then((entries) => {
+      let lines = [];
+      for (const [key, value] of entries) {
+        lines.push(`- ${key}: ${value}`);
+      }
+      const fileBlob = new Blob([lines.join("\n")], {
+        type: "text/plain;charset=utf-8",
+      });
+      const url = URL.createObjectURL(fileBlob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "weave.db";
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+    });
+  },
+  description: "Copy whole database to clipboard",
+  el: "u",
+};
 
 const link = {
   text: ["link"],
@@ -129,69 +124,59 @@ const link = {
     const selection = window.getSelection();
     const text = selection + "";
     let range = selection.getRangeAt(0);
+    const modal = document.getElementById("modal");
+    const fileContainer = document.createElement("div");
+    fileContainer.id = "fileContainer";
+    modal.append(fileContainer);
     entries().then((entries) => {
-      let keys = []
-      for (const [key, value] of entries) {
-        if (value.startsWith("g:")) {
-          continue;
-        }
-        keys.push(key)
-        const k = document.createTextNode(key);
-        const div = document.createElement("div");
-        div.classList.add("hoverable");
-        div.appendChild(k);
-        const modal = document.getElementById("modal");
-        modal.appendChild(div);
-        div.addEventListener("click", (ev) => {
-          const inp = document.querySelector("input.filename");
-          inp.value = key;
-          modal.innerHTML = "";
-          inp.dispatchEvent(enterKeyDownEvent);
-        });
-      }
+      const keys = entries.map(([key, value]) => key)
+      const files = entries
+        .filter(([key, value]) => !value.startsWith("g:"))
+        .map(([key, value]) => key);
+      console.log(files);
+      presentFiles(files, fileContainer);
+
       const hr = document.createElement("hr");
       modal.appendChild(hr);
-      showModalAndGetFilename("where to?", (destination) => {
-        const link = document.createElement("a")
-        link.title = text
-        link.innerText = text
-        let href
-        if(keys.includes(destination)){
-          href = destination
-          link.dataset.internal = true
+      showModalAndGetFilename("where to?", fileContainer, "name:", (destination) => {
+        const link = document.createElement("a");
+        link.title = text;
+        link.innerText = text;
+        let href;
+        if (keys.includes(destination)) {
+          href = destination;
+          link.dataset.internal = true;
         } else {
-          if(destination.startsWith("http")){
-            href = destination
+          if (destination.startsWith("http")) {
+            href = destination;
           } else {
-            href = "https://" + destination
+            href = "https://" + destination;
           }
-          link.dataset.internal = false
+          link.dataset.internal = false;
         }
-        link.href = href
+        link.href = href;
         range.deleteContents();
         range.insertNode(link);
         postfix(link);
-        link.addEventListener('click', (ev) => {
+        link.addEventListener("click", (ev) => {
           ev.preventDefault(); // Prevent default navigation
-          ev.stopPropagation()
-          const href = ev.target.getAttribute('href'); // To avoid issues with no-protocol
-          if(link.dataset.internal){
+          ev.stopPropagation();
+          const href = ev.target.getAttribute("href"); // To avoid issues with no-protocol
+          if (JSON.parse(link.dataset.internal)) {
             const n = weave.bodies().length;
             const bodyId = `b${n}`; // TODO NO, this is not good enough
             createPanel(weave.root, bodyId, weave.buttons(weave.root), weave);
             const body = document.getElementById(bodyId);
-            console.log(link)
+            console.log(link);
             iloadIntoBody(href, body);
-            toTop(body)
+            toTop(body);
           } else {
-            window.open(href, '_blank');
-          }       
+            window.open(href, "_blank");
+          }
         });
-      })
+      });
     });
-    
-    
-    
+
     /*
     const selectionParent = range.commonAncestorContainer.parentNode;
     if (
@@ -200,7 +185,6 @@ const link = {
     ) {
       selectionParent.remove();
     }*/
-    
   },
 };
 
@@ -243,7 +227,6 @@ const grouping = {
   description: "Group panels",
   el: "u",
 };
-
 
 const hr = {
   text: ["---"],
@@ -377,7 +360,9 @@ const newSession = {
     if (common(ev)) {
       return;
     }
-    Array.from(document.getElementsByClassName("body-container")).map(e => e.remove())
+    Array.from(document.getElementsByClassName("body-container")).map((e) =>
+      e.remove()
+    );
     weave.createPanel(weave.root, "b0", weave.buttons(weave.root), weave);
   },
   description: "Erase everything, no confirmation",
@@ -502,10 +487,10 @@ const dbload = {
 const filePicker = document.getElementById("filePicker");
 
 const loadAllFromGroup = (groupname) => {
-  let throwing
+  let throwing;
   return get(groupname)
     .then((groupcontent) => {
-      console.log(groupcontent)
+      console.log(groupcontent);
       const files = groupcontent.substring(2).split("|");
       let n = weave.bodies().length;
       for (const filename of files) {
@@ -527,9 +512,9 @@ const loadAllFromGroup = (groupname) => {
     })
     .catch((err) => {
       console.log("Loading group from IndexedDb failed", err);
-      throwing = err
-      console.log(throwing)
-      throw err
+      throwing = err;
+      console.log(throwing);
+      throw err;
     });
 };
 
@@ -557,7 +542,7 @@ const gload = {
       }
       const hr = document.createElement("hr");
       modal.appendChild(hr);
-      showModalAndGetFilename("group name?", (groupname) => {
+      showModalAndGetFilename("group name?", "name:",(groupname) => {
         loadAllFromGroup(groupname);
       });
     });
@@ -590,7 +575,6 @@ const idel = {
   description: "Delete stuff from IndexedDB",
   el: "u",
 };
-
 
 const loadFromContent = (content, filename, body) => {
   console.log(decodeURIComponent(content));
@@ -630,13 +614,15 @@ filePicker.addEventListener("change", (event) => {
   reader.onload = (readerEvent) => {
     const content = readerEvent.target.result;
     console.log(content);
-    for(const line of content.split("\n")){
-      const splits = line.split(" ")
-      const filename = splits[1].slice(0, -1)
-      const data = splits[2]
+    for (const line of content.split("\n")) {
+      const splits = line.split(" ");
+      const filename = splits[1].slice(0, -1);
+      const data = splits[2];
       set(filename, data)
-          .then(() => console.log(`Data for ${filename} stored in IndexedDb`))
-          .catch((err) => console.log(`Saving in IndexedDb failed for ${filename}`, err));
+        .then(() => console.log(`Data for ${filename} stored in IndexedDb`))
+        .catch((err) =>
+          console.log(`Saving in IndexedDb failed for ${filename}`, err)
+        );
     }
   };
 });
@@ -776,7 +762,6 @@ const buttons = (parentId) => {
     dbload,
     dbdump,
     iload,
-    isearch,
     title,
     div,
     sql, // tested
@@ -793,7 +778,7 @@ const buttons = (parentId) => {
     raw,
     link,
     getAllThingsAsStrings,
-    headers
+    headers,
   ];
 };
 
@@ -801,11 +786,11 @@ weave.buttons = buttons;
 
 let helpTable = [`<tr><td>Command</td><td>Help</td></tr>`];
 for (let button of buttons()) {
-  let commandText 
-  if(button.text){
+  let commandText;
+  if (button.text) {
     commandText = button.text.join("/");
   } else {
-    commandText = button.matcher.toString()
+    commandText = button.matcher.toString();
   }
   const tr = `<tr><td>${commandText}</td><td>${button.description}</td></tr>`;
   helpTable.push(tr);

@@ -105,19 +105,23 @@ body {
   z-index: 10000;
 }
 
-.filename {
+input.filename {
+  display: none;
+}
+
+.search {
   font-size: 110%;
   border: none;
   font-family: "monoidregular" !important;
 }
 
-.filename::placeholder { 
+.search::placeholder { 
   color: var(--subtly-transparent) !important;
   font-style: italic; /* Optional, adds additional distinction */
   font-family: "monoidregular" !important;
 }
 
-.filename:focus {
+.search:focus {
   outline: none;
 }
 

@@ -1,4 +1,4 @@
-export { isearch, iload, iloadIntoBody };
+export { iload, iloadIntoBody, presentFiles };
 
 import weave from "./weave.js";
 import { get, entries } from "./libs/idb-keyval.js";
@@ -20,72 +20,44 @@ const iloadIntoBody = (filename, body) => {
   });
 };
 
-const iload = {
-  text: ["iload"],
-  action: (ev) => {
-    const body = document.getElementById(weave.internal.bodyClicks[0]);
-    entries().then((entries) => {
-      console.log(entries);
-      for (const [key, value] of entries) {
-        if (value.startsWith("g:")) {
-          continue;
-        }
-        const k = document.createTextNode(key);
+const presentFiles = (files, container) => {
+    const modal = document.getElementById("modal")
+    container.innerHTML = ""
+    for (const file of files) {
+        const k = document.createTextNode(file);
         const div = document.createElement("div");
         div.classList.add("hoverable");
         div.appendChild(k);
-        const modal = document.getElementById("modal");
-        modal.appendChild(div);
+        container.appendChild(div);
         div.addEventListener("click", (ev) => {
           const inp = document.querySelector("input.filename");
-          inp.value = key;
+          inp.value = file;
           modal.innerHTML = "";
           inp.dispatchEvent(enterKeyDownEvent);
         });
       }
+}
+
+const iload = {
+  text: ["iload"],
+  action: (ev) => {
+    const body = document.getElementById(weave.internal.bodyClicks[0]);
+    const modal = document.getElementById("modal");
+    const fileContainer = document.createElement("div")
+    fileContainer.id = "fileContainer"
+    modal.append(fileContainer)
+    entries().then((entries) => {
+      const files = entries.filter(([key, value]) => !value.startsWith("g:")).map(([key, value]) => key)
+      console.log(files)
+      presentFiles(files, fileContainer)
       const hr = document.createElement("hr");
       modal.appendChild(hr);
-      showModalAndGetFilename("filename?", (filename) => {
+      showModalAndGetFilename("filename?", fileContainer, "",(filename) => {
         console.info(`Loading ${filename} from IndexedDB`);
         iloadIntoBody(filename, body);
       });
     });
   },
-  description: "Load a pane to disk, you won't be choosing where though",
+  description: "???",
   el: "u",
 };
-
-
-// TODO WIP, ideally this should be in the modal of iload, filtering entries instead of displaying all of them
-const isearch = {
-    text: ["isearch"],
-    action: (ev) => {
-      const body = document.getElementById(weave.internal.bodyClicks[0]);
-      const selectionText = document.getSelection() + ""
-      const filenames = weave.internal.idx.search(selectionText).map(r => r.ref)
-        console.log(filenames);
-        for (const filename of filenames) {
-          const k = document.createTextNode(filename);
-          const div = document.createElement("div");
-          div.classList.add("hoverable");
-          div.appendChild(k);
-          const modal = document.getElementById("modal");
-          modal.appendChild(div);
-          div.addEventListener("click", (ev) => {
-            const inp = document.querySelector("input.filename");
-            inp.value = filename;
-            modal.innerHTML = "";
-            inp.dispatchEvent(enterKeyDownEvent);
-          });
-        }
-        const hr = document.createElement("hr");
-        modal.appendChild(hr);
-        showModalAndGetFilename("filename?", (filename) => {
-          console.info(`Loading ${filename} from IndexedDB`);
-          iloadIntoBody(filename, body);
-        });
-
-    },
-    description: "Load a pane to disk, you won't be choosing where though",
-    el: "u",
-  };
