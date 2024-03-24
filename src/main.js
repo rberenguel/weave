@@ -4,6 +4,7 @@ import { loadAllFromGroup } from "./commands.js";
 import weave from "./weave.js";
 import { createPanel } from "./doms.js";
 import { iloadIntoBody } from "./loadymcloadface.js";
+import { entries } from "./libs/idb-keyval.js";
 // Globals that are used everywhere
 
 // Helper for inline code
@@ -35,6 +36,25 @@ window.w = window.weave;
 const urlParams = new URLSearchParams(window.location.search);
 const gloadParam = urlParams.get("gload");
 const iloadParam = urlParams.get("iload");
+
+entries().then((entries) => {
+  let docs = []
+  for (const [filename, value] of entries) {
+    if (value.startsWith("g:")) {
+      continue;
+    }
+    const text = decodeURIComponent(atob(value))
+    docs.push({name: filename, text: text})
+  }
+  weave.internal.idx = lunr(function () {
+    this.ref('name')
+    this.field('text')
+  
+    docs.forEach(function (doc) {
+      this.add(doc)
+    }, this)
+  })
+})
 
 interact(document.body).draggable({
   inertia: true,

@@ -1,4 +1,4 @@
-export { iload, iloadIntoBody };
+export { isearch, iload, iloadIntoBody };
 
 import weave from "./weave.js";
 import { get, entries } from "./libs/idb-keyval.js";
@@ -54,3 +54,38 @@ const iload = {
   description: "Load a pane to disk, you won't be choosing where though",
   el: "u",
 };
+
+
+// TODO WIP, ideally this should be in the modal of iload, filtering entries instead of displaying all of them
+const isearch = {
+    text: ["isearch"],
+    action: (ev) => {
+      const body = document.getElementById(weave.internal.bodyClicks[0]);
+      const selectionText = document.getSelection() + ""
+      const filenames = weave.internal.idx.search(selectionText).map(r => r.ref)
+        console.log(filenames);
+        for (const filename of filenames) {
+          const k = document.createTextNode(filename);
+          const div = document.createElement("div");
+          div.classList.add("hoverable");
+          div.appendChild(k);
+          const modal = document.getElementById("modal");
+          modal.appendChild(div);
+          div.addEventListener("click", (ev) => {
+            const inp = document.querySelector("input.filename");
+            inp.value = filename;
+            modal.innerHTML = "";
+            inp.dispatchEvent(enterKeyDownEvent);
+          });
+        }
+        const hr = document.createElement("hr");
+        modal.appendChild(hr);
+        showModalAndGetFilename("filename?", (filename) => {
+          console.info(`Loading ${filename} from IndexedDB`);
+          iloadIntoBody(filename, body);
+        });
+
+    },
+    description: "Load a pane to disk, you won't be choosing where though",
+    el: "u",
+  };

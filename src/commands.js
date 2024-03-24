@@ -14,7 +14,7 @@ import { parseIntoWrapper, toMarkdown } from "./parser.js";
 import { get, keys, del, set, entries } from "./libs/idb-keyval.js";
 import { enterKeyDownEvent } from "./commands_base.js";
 import { toTop } from "./doms.js";
-import { iload, iloadIntoBody } from "./loadymcloadface.js";
+import { iload, isearch, iloadIntoBody } from "./loadymcloadface.js";
 
 // Buttons
 import { div } from "./dynamicdiv.js";
@@ -505,6 +505,7 @@ const loadAllFromGroup = (groupname) => {
   let throwing
   return get(groupname)
     .then((groupcontent) => {
+      console.log(groupcontent)
       const files = groupcontent.substring(2).split("|");
       let n = weave.bodies().length;
       for (const filename of files) {
@@ -775,6 +776,7 @@ const buttons = (parentId) => {
     dbload,
     dbdump,
     iload,
+    isearch,
     title,
     div,
     sql, // tested
