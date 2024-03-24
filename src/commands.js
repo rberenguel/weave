@@ -45,6 +45,67 @@ weave.idb = {
 weave.internal.manipulation = manipulation;
 weave.internal.toMD = toMarkdown;
 
+/* Investigating notifications
+
+function requestAndTriggerNotification() {
+  Notification.requestPermission().then(function(result) {
+    if (result === 'granted') {
+      // Permission granted, trigger the notification
+      var notification = new Notification('Test Notification', {
+        body: 'Hello there! This is a sample notification.',
+        icon: 'http://mostlymaths.net/weave/src/media/icon.png', // Replace with the path to your icon, if you have one
+        requireInteraction: true
+      }); 
+    }
+  });
+}
+
+weave.internal.triggerNotif = requestAndTriggerNotification
+document.body.onclick = w.internal.triggerNotif
+
+*/
+
+const getAllThingsAsStrings =  {
+  text: ["pbcopy"],
+  action: (ev) => {
+  entries().then((entries) => {
+    let lines = []
+    for (const [key, value] of entries) {
+      lines.push(`- ${key}: ${value}`)
+
+    }
+    navigator.clipboard.writeText(lines.join("\n"))
+  })
+}, 
+description: "Copy whole database to clipboard",
+el: "u",
+}
+
+//weave.internal.getAll = getAllThingsAsStrings
+const getAllThingsAsStringsToFile =  {
+  text: ["pbfile"],
+  action: (ev) => {
+  entries().then((entries) => {
+    let lines = []
+    for (const [key, value] of entries) {
+      lines.push(`- ${key}: ${value}`)
+
+    }
+  const fileBlob = new Blob([lines.join("\n")], { type: 'text/plain;charset=utf-8' });
+  const url = URL.createObjectURL(fileBlob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = "weave.db";
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);  
+  })
+}, 
+description: "Copy whole database to clipboard",
+el: "u",
+}
+
 const link = {
   text: ["link"],
   action: (ev) => {
@@ -412,11 +473,9 @@ const title = {
   el: "u",
 };
 
-const load = {
-  text: ["load", "📂"],
+const loaddb = {
+  text: ["loaddb"],
   action: (ev) => {
-    // Reverse of save. Needs a panel chosen
-
     filePicker.click();
   },
   description: "Load a pane to disk, you won't be choosing where though",
@@ -553,11 +612,14 @@ filePicker.addEventListener("change", (event) => {
   reader.onload = (readerEvent) => {
     const content = readerEvent.target.result;
     console.log(content);
-    loadFromContent(
-      content,
-      file.name,
-      document.getElementById(weave.internal.bodyClicks[1])
-    );
+    for(const line of content.split("\n")){
+      const splits = line.split(" ")
+      const filename = splits[1].slice(0, -1)
+      const data = splits[2]
+      set(filename, data)
+          .then(() => console.log(`Data for ${filename} stored in IndexedDb`))
+          .catch((err) => console.log(`Saving in IndexedDb failed for ${filename}`, err));
+    }
   };
 });
 
@@ -693,7 +755,7 @@ const buttons = (parentId) => {
     gfont, // tested
     save,
     isave,
-    load,
+    loaddb,
     iload,
     title,
     div,
@@ -709,7 +771,9 @@ const buttons = (parentId) => {
     idel,
     pin,
     raw,
-    link
+    link,
+    getAllThingsAsStrings,
+    getAllThingsAsStringsToFile
   ];
 };
 
