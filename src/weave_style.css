@@ -50,7 +50,8 @@ body {
   font-weight: 100;
   /*padding: 1em;*/
   caret-color: green;
-  width: 95%;
+  width: 30%;
+  height: 30%;
   min-height: fit-content;
   /* height: 300px; why the f had I this hardcoded? */
   overflow: auto;

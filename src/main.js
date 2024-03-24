@@ -54,8 +54,8 @@ interact(document.body).draggable({
 
 document.body.addEventListener("wheel", (event) => {
   const body = document.body;
-  if(event.target.id != "content"){
-    return
+  if (event.target.id != "content") {
+    return;
   }
   let x = parseFloat(body.dataset.x || 0);
   let y = parseFloat(body.dataset.y || 0);
@@ -73,8 +73,6 @@ document.body.addEventListener("wheel", (event) => {
   body.dataset.scale = scale;
 });
 
-console.log(gloadParam);
-
 if (gloadParam) {
   try {
     loadAllFromGroup(gloadParam)
@@ -90,14 +88,16 @@ if (gloadParam) {
   } catch (err) {}
 } else {
   try {
-    loadAllFromGroup("weave:last-session");
-  } catch (err) {
-    console.log("Could not load from previous session", err);
+    loadAllFromGroup("weave:last-session")
+      .then()
+      .catch((err) => {
+        console.log("Could not load from previous session", err);
 
-    weave.createPanel(weave.root, "b0", weave.buttons(weave.root), weave);
+        weave.createPanel(weave.root, "b0", weave.buttons(weave.root), weave);
 
-    for (let body of weave.bodies()) {
-      weave.hookBody(body);
-    }
-  }
+        for (let body of weave.bodies()) {
+          weave.hookBody(body);
+        }
+      });
+  } catch (err) {}
 }
