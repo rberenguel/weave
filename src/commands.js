@@ -65,6 +65,23 @@ document.body.onclick = w.internal.triggerNotif
 
 */
 
+
+const headers = {
+  matcher: /h[1-4]/,
+  action: (match) => (ev) => {
+    const selection = window.getSelection();
+    // TODO by how I process parsing, I don't allow nested stuff in headers
+    const text = selection + "";
+    const h = document.createElement(match);
+    h.innerText = text
+    let range = selection.getRangeAt(0);
+ 
+    range.deleteContents();
+    range.insertNode(h);
+  },
+  description: "Headers"
+};
+
 const getAllThingsAsStrings =  {
   text: ["pbcopy"],
   action: (ev) => {
@@ -774,7 +791,7 @@ const buttons = (parentId) => {
     raw,
     link,
     getAllThingsAsStrings,
-    
+    headers
   ];
 };
 
@@ -782,7 +799,12 @@ weave.buttons = buttons;
 
 let helpTable = [`<tr><td>Command</td><td>Help</td></tr>`];
 for (let button of buttons()) {
-  const commandText = button.text.join("/");
+  let commandText 
+  if(button.text){
+    commandText = button.text.join("/");
+  } else {
+    commandText = button.matcher.toString()
+  }
   const tr = `<tr><td>${commandText}</td><td>${button.description}</td></tr>`;
   helpTable.push(tr);
 }

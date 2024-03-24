@@ -1,5 +1,4 @@
 import { createPanel } from "./doms.js";
-import { hookBody } from "./internal.js";
 
 const weave = {
   bodies: () => document.getElementsByClassName("body"),
@@ -27,7 +26,6 @@ const weave = {
     this.internal.clickedId[0];
   },
   createPanel: createPanel,
-  hookBody: hookBody,
   root: null,
   /*constructor() {
     // Bind `this` for methods that need it

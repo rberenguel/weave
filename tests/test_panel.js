@@ -26,7 +26,6 @@ describe('createPanel', function() {
 
 describe('split text / button', function() {
     const panelBody = () => document.getElementById(weave.root).querySelector(".body")
-    weave.hookBody(panelBody());
     const splitButton = () => panelBody().querySelector(".wrap")
     describe('should go from text to button', function() {
         it('should become a button on right click', function() {

@@ -1,3 +1,17 @@
+h1 {
+  font-size: 120%;
+}
+
+h2 {
+  font-size: 115%;
+}
+h3 {
+  font-size: 110%;
+}
+h4 {
+  font-size: 105%;
+}
+
 #content {
   width: 100%;
   height: 100%;

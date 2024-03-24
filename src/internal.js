@@ -1,6 +1,6 @@
 import weave from "./weave.js";
 import { wireEverything } from "./load.js";
-export { hookBodies, hookBody };
+export { hookBodies };
 import { reset } from "./commands_base.js";
 import { saveAll } from "./save.js";
 import { zwsr } from "./doms.js";
@@ -131,7 +131,20 @@ const wireButtons = (buttons) => (event) => {
   let node, result;
   console.log(buttons);
   for (let button of buttons) {
-    if (button.text.includes(`${selectedText}`)) {
+    if(button.matcher && button.matcher.test(selectedText)){
+      if (button.creator) {
+        event.preventDefault();
+        // An override to have autoformatted selections
+        button.creator();
+        return;
+      }
+      result = button;
+      node = button.el
+        ? document.createElement(button.el)
+        : document.createElement("span");
+      break;
+    }
+    if (button.text && button.text.includes(`${selectedText}`)) {
       if (button.creator) {
         event.preventDefault();
         // An override to have autoformatted selections
@@ -150,7 +163,12 @@ const wireButtons = (buttons) => (event) => {
     let div = document.createElement("div");
     node.innerHTML = `${selectedText}`.trim();
     div.contentEditable = false;
-    div.addEventListener("mousedown", result.action);
+    if(result.matcher){
+      div.addEventListener("mousedown", result.action(selectedText));
+    } else {
+      div.addEventListener("mousedown", result.action);
+    }
+    
     div.alive = true;
     node.alive = true;
     // TODO I don't have all this prevention when I rewire everything?
@@ -173,6 +191,11 @@ const wireButtons = (buttons) => (event) => {
     event.preventDefault();
   }
 };
+
+
+/*
+
+Removing the whole keyboard-driven state machine
 
 let keyStack = {};
 let listing = {};
@@ -206,7 +229,7 @@ const hookBody = (body) => {
       if (keyStack[body.id][0] == "Enter") {
         keyStack[body.id].push("-");
         if (keyStack[body.id].slice(1).join("") === "---") {
-          /*const zws = zwsr();
+          const zws = zwsr();
           keyStack[body.id] = ["Enter"]; // We want possibly lists in this case
           const selection = window.getSelection();
           let range = deleteCurrentWord(selection);
@@ -217,7 +240,7 @@ const hookBody = (body) => {
           newRange.setStartAfter(zws);
           selection.removeAllRanges();
           selection.addRange(newRange);
-          */
+          
         }
       }
     }
@@ -335,3 +358,4 @@ const hookBody = (body) => {
     }
   });
 };
+*/

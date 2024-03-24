@@ -1,5 +1,5 @@
 export { createPanel, zwsr, pad, wrap, prefix, postfix, divWithDraggableHandle, toTop };
-import { hookBodies, hookBody } from "./internal.js";
+import { hookBodies } from "./internal.js";
 import { manipulation } from "./panel.js";
 import { dndDynamicDiv } from "./dynamicdiv.js";
 // TODO: I think I want to be able to move panels instead of drag-and-drop.
@@ -184,7 +184,6 @@ const createPanel = (parentId, id, buttons, weave) => {
   bodyContainer.addEventListener("click", toTop(bodyContainer));
   document.getElementById(parentId).appendChild(bodyContainer);
   hookBodies(buttons); // TODO fix this This wires all buttons 
-  hookBody(body); //TODO fix this  This wires all the keys
   manipulation.forcePositionToReality(bodyContainer)
 };
 

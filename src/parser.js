@@ -185,6 +185,34 @@ const parseInto = (text, body) => {
       body.appendChild(li)
       continue
     }
+    if(line.startsWith("# ")){ // Ugly, but this forces out weird cases like lines of hashes
+      const h = document.createElement("h1")
+      const rest = line.slice(2)
+      parseInto(rest, h)
+      body.appendChild(h)
+      continue
+    }
+    if(line.startsWith("## ")){ // Ugly, but this forces out weird cases like lines of hashes
+      const h = document.createElement("h2")
+      const rest = line.slice(3)
+      parseInto(rest, h)
+      body.appendChild(h)
+      continue
+    }
+    if(line.startsWith("### ")){ // Ugly, but this forces out weird cases like lines of hashes
+      const h = document.createElement("h3")
+      const rest = line.slice(4)
+      parseInto(rest, h)
+      body.appendChild(h)
+      continue
+    }
+    if(line.startsWith("#### ")){ // Ugly, but this forces out weird cases like lines of hashes
+      const h = document.createElement("h4")
+      const rest = line.slice(5)
+      parseInto(rest, h)
+      body.appendChild(h)
+      continue
+    }
     // Ignoring code blocks for now, this can go in parsediv
     const [simple, hasDiv] = parseTillTick(line);
 
@@ -295,6 +323,26 @@ function iterateDOM(node) {
       const text = child.innerText
       const md = `- ${text}\n`
       generated.push(md)
+    }
+    if (child.nodeName === "H1") {
+      // TODO this is ignoring all possibly HTML inside headers
+      const text = child.innerText
+      generated.push(`# ${text}\n`);
+    }
+    if (child.nodeName === "H2") {
+      // TODO this is ignoring all possibly HTML inside headers
+      const text = child.innerText
+      generated.push(`## ${text}\n`);
+    }
+    if (child.nodeName === "H3") {
+      // TODO this is ignoring all possibly HTML inside headers
+      const text = child.innerText
+      generated.push(`### ${text}\n`);
+    }
+    if (child.nodeName === "H4") {
+      // TODO this is ignoring all possibly HTML inside headers
+      const text = child.innerText
+      generated.push(`#### ${text}\n`);
     }
     if (child.nodeName === "SPAN" && child.classList.length === 0) {
       const md = iterateDOM(child);

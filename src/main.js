@@ -82,10 +82,6 @@ if (gloadParam) {
       .catch((err) => {
         console.log("Could not load from url", err);
         weave.createPanel(weave.root, "b0", weave.buttons(weave.root), weave);
-
-        for (let body of weave.bodies()) {
-          weave.hookBody(body);
-        }
       });
   } catch (err) {}
 } else {
@@ -104,10 +100,6 @@ if (gloadParam) {
         console.log("Could not load from previous session", err);
 
         weave.createPanel(weave.root, "b0", weave.buttons(weave.root), weave);
-
-        for (let body of weave.bodies()) {
-          weave.hookBody(body);
-        }
       });
   }
 
