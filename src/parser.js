@@ -178,6 +178,13 @@ const parseInto = (text, body) => {
       body.appendChild(document.createElement("hr"));
       continue;
     }
+    if(line.startsWith("- ")){
+      const li = document.createElement("li")
+      const rest = line.slice(2)
+      parseInto(rest, li)
+      body.appendChild(li)
+      continue
+    }
     // Ignoring code blocks for now, this can go in parsediv
     const [simple, hasDiv] = parseTillTick(line);
 
@@ -273,7 +280,7 @@ function iterateDOM(node) {
       const md = iterateDOM(child);
       generated.push(md);
     }
-    if (child.nodeName === "A") {
+    if (child.nodeName === "A") { // Maybe I should just preserve <a>?
       if (JSON.parse(child.dataset.internal)) {
         const href = child.getAttribute("href");
         generated.push(`[[${href}]]`);
@@ -282,6 +289,12 @@ function iterateDOM(node) {
         const text = child.innerText;
         generated.push(`[${text}](${href})`);
       }
+    }
+    if(child.nodeName === "LI"){
+      // TODO this is ignoring all possibly HTML inside lists
+      const text = child.innerText
+      const md = `- ${text}\n`
+      generated.push(md)
     }
     if (child.nodeName === "SPAN" && child.classList.length === 0) {
       const md = iterateDOM(child);

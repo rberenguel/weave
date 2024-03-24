@@ -33,10 +33,10 @@ body {
 }
 
 .better-handle {
-  width: calc(100% - 2em);
-  height: calc(100% - 2em);
+  width: calc(100% - 4em);
+  height: calc(100% - 4em);
   display: block;
-  padding: 1em;
+  padding: 2em;
   border-radius: 5px;
   line-height: 1.5;
   font-weight: 100;

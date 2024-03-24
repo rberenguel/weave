@@ -82,8 +82,8 @@ el: "u",
 }
 
 //weave.internal.getAll = getAllThingsAsStrings
-const getAllThingsAsStringsToFile =  {
-  text: ["pbfile"],
+const dbdump =  {
+  text: ["dbdump"],
   action: (ev) => {
   entries().then((entries) => {
     let lines = []
@@ -473,8 +473,8 @@ const title = {
   el: "u",
 };
 
-const loaddb = {
-  text: ["loaddb"],
+const dbload = {
+  text: ["dbload"],
   action: (ev) => {
     filePicker.click();
   },
@@ -755,7 +755,8 @@ const buttons = (parentId) => {
     gfont, // tested
     save,
     isave,
-    loaddb,
+    dbload,
+    dbdump,
     iload,
     title,
     div,
@@ -773,7 +774,7 @@ const buttons = (parentId) => {
     raw,
     link,
     getAllThingsAsStrings,
-    getAllThingsAsStringsToFile
+    
   ];
 };
 

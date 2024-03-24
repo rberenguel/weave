@@ -2,7 +2,8 @@ import { loadAllFromGroup } from "./commands.js";
 
 // Can't import from dom due to circular dependency?
 import weave from "./weave.js";
-
+import { createPanel } from "./doms.js";
+import { iloadIntoBody } from "./loadymcloadface.js";
 // Globals that are used everywhere
 
 // Helper for inline code
@@ -33,6 +34,7 @@ window.w = window.weave;
 
 const urlParams = new URLSearchParams(window.location.search);
 const gloadParam = urlParams.get("gload");
+const iloadParam = urlParams.get("iload");
 
 interact(document.body).draggable({
   inertia: true,
@@ -87,7 +89,15 @@ if (gloadParam) {
       });
   } catch (err) {}
 } else {
-  try {
+  if(iloadParam){
+    createPanel(weave.root, "b0", weave.buttons(weave.root), weave);
+    const n = weave.bodies().length;
+    const bodyId = `b${n}`; // TODO NO, this is not good enough
+    createPanel(weave.root, bodyId, weave.buttons(weave.root), weave);
+    const body = document.getElementById(bodyId);
+    console.log(iloadParam)
+    iloadIntoBody(iloadParam, body);
+  } else {
     loadAllFromGroup("weave:last-session")
       .then()
       .catch((err) => {
@@ -99,5 +109,7 @@ if (gloadParam) {
           weave.hookBody(body);
         }
       });
-  } catch (err) {}
+  }
+
+
 }
