@@ -1,3 +1,5 @@
+export { hilite }
+
 const pythonKeywords = [
   "False",
   "None",

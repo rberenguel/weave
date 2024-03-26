@@ -169,14 +169,30 @@ const linkStateMachine = (line, body) => {
 
 const parseInto = (text, body) => {
   const lines = text.split("\n");
+  let codeBlock = false
   for (const line of lines) {
     if (line == "<br/>") {
       body.appendChild(document.createElement("div"));
       continue;
     }
+    if(codeBlock && !line.startsWith("```")){
+      const tn = document.createTextNode(line)
+      codeBlock.appendChild(tn)
+      codeBlock.appendChild(document.createElement("br"))
+      continue
+    }
     if (line == "---") {
       body.appendChild(document.createElement("hr"));
       continue;
+    }
+    if (line.startsWith("```")){
+      if(codeBlock){
+        body.appendChild(codeBlock)
+        codeBlock = false
+      } else {
+        codeBlock = document.createElement("pre")
+      }
+      continue
     }
     if(line.startsWith("- ")){
       const li = document.createElement("li")
@@ -347,6 +363,13 @@ function iterateDOM(node) {
     if (child.nodeName === "SPAN" && child.classList.length === 0) {
       const md = iterateDOM(child);
       generated.push(md);
+    }
+    if (child.nodeName === "PRE"){
+      console.log("PRE")
+      const splits = child.innerText.split("\n").filter(l => l.length > 0)
+      console.log(splits)
+      const md = "\n```\n" + splits.join("\n<br/>\n") + "\n```\n"
+      generated.push(md)
     }
     if (child.classList.contains("dynamic-div")) {
       const text = child.innerText;

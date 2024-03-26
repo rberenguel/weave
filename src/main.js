@@ -38,24 +38,24 @@ const gloadParam = urlParams.get("gload");
 const iloadParam = urlParams.get("iload");
 
 entries().then((entries) => {
-  let docs = []
+  let docs = [];
   for (const [filename, value] of entries) {
     if (value.startsWith("g:")) {
       continue;
     }
-    const text = decodeURIComponent(atob(value))
-    docs.push({name: filename, filename: filename, text: text})
+    const text = decodeURIComponent(atob(value));
+    docs.push({ name: filename, filename: filename, text: text });
   }
   weave.internal.idx = lunr(function () {
-    this.ref('filename')
-    this.field('name')
-    this.field('text')
-  
+    this.ref("filename");
+    this.field("name");
+    this.field("text");
+
     docs.forEach(function (doc) {
-      this.add(doc)
-    }, this)
-  })
-})
+      this.add(doc);
+    }, this);
+  });
+});
 
 interact(document.body).draggable({
   inertia: true,
@@ -106,13 +106,13 @@ if (gloadParam) {
       });
   } catch (err) {}
 } else {
-  if(iloadParam){
+  if (iloadParam) {
     createPanel(weave.root, "b0", weave.buttons(weave.root), weave);
     const n = weave.bodies().length;
     const bodyId = `b${n}`; // TODO NO, this is not good enough
     createPanel(weave.root, bodyId, weave.buttons(weave.root), weave);
     const body = document.getElementById(bodyId);
-    console.log(iloadParam)
+    console.log(iloadParam);
     iloadIntoBody(iloadParam, body);
   } else {
     loadAllFromGroup("weave:last-session")
@@ -123,6 +123,4 @@ if (gloadParam) {
         weave.createPanel(weave.root, "b0", weave.buttons(weave.root), weave);
       });
   }
-
-
 }

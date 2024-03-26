@@ -26,7 +26,7 @@ import { jazz } from "./jazz.js";
 import { GuillotineJS } from "./guillotine.js";
 import { id, eval_, sql } from "./code.js";
 import { raw } from "./raw.js";
-
+import { hilite } from "./highlight.js";
 weave.idb = {
   keys: () => {
     keys().then((keys) => (weave.idb.allKeys = keys));
@@ -75,6 +75,31 @@ const headers = {
     range.insertNode(h);
   },
   description: "Headers",
+};
+
+const code = {
+  text: ["code"],
+  action: (ev) => {
+    const selection = window.getSelection();
+    const text = selection + "";
+    if(selection.anchorNode.parentElement && selection.anchorNode.parentElement.nodeName === "PRE"){
+      const parent = selection.anchorNode.parentNode
+      const div = document.createElement("div")
+      div.innerText = text
+      console.log(parent)
+      parent.closest(".body").insertBefore(parent, div)
+      parent.remove()
+    } else {
+      const pre = document.createElement("pre");
+      pre.innerText = text; // This might need tweaking due to nested crap
+      let range = selection.getRangeAt(0);
+      range.deleteContents();
+      range.insertNode(pre);
+      hilite()
+    }
+
+  },
+  description: "Code block/uncode block",
 };
 
 const getAllThingsAsStrings = {
@@ -129,7 +154,7 @@ const link = {
     fileContainer.id = "fileContainer";
     modal.append(fileContainer);
     entries().then((entries) => {
-      const keys = entries.map(([key, value]) => key)
+      const keys = entries.map(([key, value]) => key);
       const files = entries
         .filter(([key, value]) => !value.startsWith("g:"))
         .map(([key, value]) => key);
@@ -138,43 +163,51 @@ const link = {
 
       const hr = document.createElement("hr");
       modal.appendChild(hr);
-      showModalAndGetFilename("where to?", fileContainer, "name:", (destination) => {
-        const link = document.createElement("a");
-        link.title = text;
-        link.innerText = text;
-        let href;
-        if (keys.includes(destination)) {
-          href = destination;
-          link.dataset.internal = true;
-        } else {
-          if (destination.startsWith("http")) {
+      showModalAndGetFilename(
+        "where to?",
+        fileContainer,
+        "name:",
+        (destination) => {
+          if (!destination) {
+            return;
+          }
+          const link = document.createElement("a");
+          link.title = text;
+          link.innerText = text;
+          let href;
+          if (keys.includes(destination)) {
             href = destination;
+            link.dataset.internal = true;
           } else {
-            href = "https://" + destination;
+            if (destination.startsWith("http")) {
+              href = destination;
+            } else {
+              href = "https://" + destination;
+            }
+            link.dataset.internal = false;
           }
-          link.dataset.internal = false;
+          link.href = href;
+          range.deleteContents();
+          range.insertNode(link);
+          postfix(link);
+          link.addEventListener("click", (ev) => {
+            ev.preventDefault(); // Prevent default navigation
+            ev.stopPropagation();
+            const href = ev.target.getAttribute("href"); // To avoid issues with no-protocol
+            if (JSON.parse(link.dataset.internal)) {
+              const n = weave.bodies().length;
+              const bodyId = `b${n}`; // TODO NO, this is not good enough
+              createPanel(weave.root, bodyId, weave.buttons(weave.root), weave);
+              const body = document.getElementById(bodyId);
+              console.log(link);
+              iloadIntoBody(href, body);
+              toTop(body);
+            } else {
+              window.open(href, "_blank");
+            }
+          });
         }
-        link.href = href;
-        range.deleteContents();
-        range.insertNode(link);
-        postfix(link);
-        link.addEventListener("click", (ev) => {
-          ev.preventDefault(); // Prevent default navigation
-          ev.stopPropagation();
-          const href = ev.target.getAttribute("href"); // To avoid issues with no-protocol
-          if (JSON.parse(link.dataset.internal)) {
-            const n = weave.bodies().length;
-            const bodyId = `b${n}`; // TODO NO, this is not good enough
-            createPanel(weave.root, bodyId, weave.buttons(weave.root), weave);
-            const body = document.getElementById(bodyId);
-            console.log(link);
-            iloadIntoBody(href, body);
-            toTop(body);
-          } else {
-            window.open(href, "_blank");
-          }
-        });
-      });
+      );
     });
 
     /*
@@ -542,7 +575,10 @@ const gload = {
       }
       const hr = document.createElement("hr");
       modal.appendChild(hr);
-      showModalAndGetFilename("group name?", "name:",(groupname) => {
+      showModalAndGetFilename("group name?", "name:", (groupname) => {
+        if (!groupname) {
+          return;
+        }
         loadAllFromGroup(groupname);
       });
     });
@@ -779,6 +815,7 @@ const buttons = (parentId) => {
     link,
     getAllThingsAsStrings,
     headers,
+    code
   ];
 };
 

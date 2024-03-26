@@ -52,30 +52,37 @@ function showModalAndGetFilename(placeholder, fileContainer, prefix, callback) {
   inp.classList.add("search");
   inp.placeholder = placeholder;
   const loadInput = document.createElement("input");
-  loadInput.classList.add("filename")
+  loadInput.classList.add("filename");
   const modal = document.getElementById("modal");
   modal.appendChild(inp);
-  modal.appendChild(loadInput)
+  modal.appendChild(loadInput);
   modal.style.display = "block";
   inp.focus();
   inp.addEventListener("keydown", function (ev) {
     //ev.preventDefault();
     const searchString = inp.value;
-    let results
+    let results;
     try {
-      results = weave.internal.idx.search(prefix + searchString).map(r => r.ref)
-    } catch (err){
-      console.log("Lunar issue", err)
-      results = []
+      results = weave.internal.idx
+        .search(prefix + searchString)
+        .map((r) => r.ref);
+    } catch (err) {
+      console.log("Lunar issue", err);
+      results = [];
     }
-    console.log(results)
-    presentFiles(results, fileContainer)
+    console.log(results);
+    presentFiles(results, fileContainer);
     if (ev.key === "Enter") {
       loadInput.value = searchString;
       modal.innerHTML = "";
       loadInput.dispatchEvent(enterKeyDownEvent);
     }
-  })
+    if (ev.key === "Escape") {
+      modal.innerHTML = "";
+      modal.style.display = "none";
+      callback(null);
+    }
+  });
   loadInput.addEventListener("keydown", function (ev) {
     console.log(ev);
     if (ev.key === "Enter") {
@@ -99,10 +106,18 @@ const setFilenameInBodyDataset = (body, fileContainer) => {
 
   // Need filename from modal
   return new Promise((resolve) => {
-    showModalAndGetFilename("filename?", fileContainer,"name:", function (filenameFromModal) {
-      body.dataset.filename = filenameFromModal;
-      resolve([filenameFromModal, body]);
-    });
+    showModalAndGetFilename(
+      "filename?",
+      fileContainer,
+      "name:",
+      function (filenameFromModal) {
+        if (!filenameFromModal) {
+          return;
+        }
+        body.dataset.filename = filenameFromModal;
+        resolve([filenameFromModal, body]);
+      }
+    );
   });
 };
 
@@ -120,9 +135,9 @@ const filenameToSelectedBodyFromSelection = () => {
   // No selection - asynchronous part
   const body = document.getElementById(weave.internal.bodyClicks[0]);
   const modal = document.getElementById("modal");
-  const fileContainer = document.createElement("div")
-  fileContainer.id = "fileContainer"
-  modal.append(fileContainer)
+  const fileContainer = document.createElement("div");
+  fileContainer.id = "fileContainer";
+  modal.append(fileContainer);
   // This block will be reused…
   return setFilenameInBodyDataset(body, fileContainer);
 };
@@ -205,17 +220,25 @@ const gsave = {
     }
     // First make sure all panes are saved properly in processFiles
     const modal = document.getElementById("modal");
-    const fileContainer = document.createElement("div")
-    fileContainer.id = "fileContainer"
-    modal.append(fileContainer)
+    const fileContainer = document.createElement("div");
+    fileContainer.id = "fileContainer";
+    modal.append(fileContainer);
     processFiles().then((allFiles) => {
-      showModalAndGetFilename("group name?", fileContainer, "name:",(groupname) => {
-        set(groupname, "g:" + allFiles.join("|"))
-          .then(() => console.log("Group data saved in IndexedDb"))
-          .catch((err) => console.log("Saving in IndexedDb failed", err));
-        info.innerHTML = "&#x1F4BE;";
-        info.classList.add("fades");
-      });
+      showModalAndGetFilename(
+        "group name?",
+        fileContainer,
+        "name:",
+        (groupname) => {
+          if (!groupname) {
+            return;
+          }
+          set(groupname, "g:" + allFiles.join("|"))
+            .then(() => console.log("Group data saved in IndexedDb"))
+            .catch((err) => console.log("Saving in IndexedDb failed", err));
+          info.innerHTML = "&#x1F4BE;";
+          info.classList.add("fades");
+        }
+      );
     });
   },
   description:

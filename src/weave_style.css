@@ -115,7 +115,7 @@ input.filename {
   font-family: "monoidregular" !important;
 }
 
-.search::placeholder { 
+.search::placeholder {
   color: var(--subtly-transparent) !important;
   font-style: italic; /* Optional, adds additional distinction */
   font-family: "monoidregular" !important;
@@ -127,22 +127,27 @@ input.filename {
 
 a {
   color: var(--yellow);
-  text-decoration: none;
+  text-decoration: underline;
   cursor: pointer;
 }
 
+a[data-internal="false"]::after {
+  content: " 🌍";
+  font-size: 50%;
+  position: absolute;
+  margin-left: 5px;
+}
+
 .selected {
-  box-shadow: 
-  0 0 10px 2px #cccc66cc, /* Smaller, brighter inner glow */
-  0 0 30px 10px #cccc6644, /* Larger, softer outer glow */
-  0 0 50px 20px #cccc6611; /* Even larger, faint glow */
+  box-shadow: 0 0 10px 2px #cccc66cc,
+    /* Smaller, brighter inner glow */ 0 0 30px 10px #cccc6644,
+    /* Larger, softer outer glow */ 0 0 50px 20px #cccc6611; /* Even larger, faint glow */
 }
 
 .highlighted {
-  box-shadow: 
-  0 0 10px 2px #cc6600cc, /* Smaller, brighter inner glow */
-  0 0 30px 10px #cc660044, /* Larger, softer outer glow */
-  0 0 50px 20px #cc660011; /* Even larger, faint glow */
+  box-shadow: 0 0 10px 2px #cc6600cc,
+    /* Smaller, brighter inner glow */ 0 0 30px 10px #cc660044,
+    /* Larger, softer outer glow */ 0 0 50px 20px #cc660011; /* Even larger, faint glow */
 }
 
 .hoverable:hover {
@@ -150,8 +155,7 @@ a {
 }
 
 .mildly-highlighted {
-  box-shadow: 
-  0 0 10px 8px #cc660033; /* Subtle inner glow */
+  box-shadow: 0 0 10px 8px #cc660033; /* Subtle inner glow */
 }
 
 .folded-bc {
@@ -180,11 +184,11 @@ a {
 /* For panels */
 .dragging {
   top: 0;
-left: 0;
-position: absolute!important;
-z-index: 1000;
+  left: 0;
+  position: absolute !important;
+  z-index: 1000;
   position: fixed !important;
-  color: var(--bright-yellow)!important;
+  color: var(--bright-yellow) !important;
   opacity: 0.5 !important;
   display: inline-block !important;
   max-height: fit-content !important;
@@ -223,7 +227,7 @@ z-index: 1000;
   padding-right: 0.1em;
   padding-top: 0.1em;
   padding-bottom: 0.1em;
-  padding-left:0.2em;
+  padding-left: 0.2em;
 }
 
 .dynamic-div.checked {
@@ -245,7 +249,7 @@ z-index: 1000;
   display: inline-block;
   width: 1em;
   height: 1em;
-  margin-right: 0 .5em;
+  margin-right: 0 0.5em;
   border: 2px solid #c60;
   border-radius: 3px;
   vertical-align: middle;
@@ -436,16 +440,19 @@ div.wrap {
 .blur {
   filter: blur(3px);
 }
+
 .body > pre {
   font-family: "monoidregular";
   padding-left: 2em;
   font-size: 60%;
   line-height: 1.1em;
   background-color: #00000022;
-  padding-right: 0.4em;
-  padding-top: 0.4em;
+  padding-right: 0.8em;
+  padding-top: 0.8em;
+  padding-left: 1.6em;
+  padding-bottom: 0.8em;
   padding-bottom: 0.4em;
-  border: 1px solid var(--bright-orange);
+  border: 1px solid var(--bright-blue);
   border-radius: 5px;
   white-space: pre-wrap;
   text-indent: -1em each-line;
