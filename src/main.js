@@ -1,4 +1,4 @@
-import { loadAllFromGroup } from "./commands.js";
+import { loadAllFromGroup } from "./loadymcloadface.js";
 
 // Can't import from dom due to circular dependency?
 import weave from "./weave.js";

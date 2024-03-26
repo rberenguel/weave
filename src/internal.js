@@ -105,7 +105,10 @@ const hookBodies = (buttons) => {
     }
 
     body.addEventListener("contextmenu", wireButtons(buttons));
-    interact(body).on("hold", wireButtons(buttons));
+    interact(body).on("hold", ev => {
+      ev.preventDefault()
+      wireButtons(buttons)(ev)
+    });
     body.addEventListener("paste", (event) => {
       // Paste takes a slight bit to modify the DOM, if I trigger
       // the wiring without waiting a pasted button might not be wired

@@ -47,14 +47,15 @@ body {
 }
 
 .better-handle {
-  width: calc(100% - 4em);
-  height: calc(100% - 4em);
   display: block;
-  padding: 2em;
+  /* This padding is the draggable space always present */
+  padding: 1.5em;
   border-radius: 5px;
   line-height: 1.5;
   font-weight: 100;
   z-index: -1;
+  /* This margin is the resizable space always present */
+  margin: 0.5em;
 }
 
 .body-container {
@@ -66,7 +67,7 @@ body {
   caret-color: green;
   width: 30%;
   height: 30%;
-  min-height: fit-content;
+  /*min-height: fit-content;*/
   /* height: 300px; why the f had I this hardcoded? */
   overflow: auto;
   /*
@@ -84,6 +85,10 @@ body {
   margin: 1em;
   box-sizing: border-box;
   z-index: 1;
+}
+
+.body-container.unfit {
+  min-height: min-content;
 }
 
 #modal {
@@ -232,6 +237,10 @@ a[data-internal="false"]::after {
 
 .dynamic-div.checked {
   text-decoration: line-through;
+}
+
+.important {
+  border: thick double var(--bright-red);
 }
 
 /* Style the label to look like an unchecked checkbox */

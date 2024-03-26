@@ -1,4 +1,4 @@
-export { iload, iloadIntoBody, presentFiles };
+export { iload, iloadIntoBody, presentFiles, gload, loadAllFromGroup };
 
 import weave from "./weave.js";
 import { get, entries } from "./libs/idb-keyval.js";
@@ -6,6 +6,7 @@ import { showModalAndGetFilename } from "./save.js";
 import { enterKeyDownEvent } from "./commands_base.js";
 import { parseIntoWrapper } from "./parser.js";
 import { wireEverything } from "./load.js";
+import { createPanel } from "./doms.js";
 
 const iloadIntoBody = (filename, body) => {
   console.log(filename);
@@ -64,4 +65,64 @@ const iload = {
   },
   description: "???",
   el: "u",
+};
+
+const gload = {
+  text: ["gload"],
+  action: (ev) => {
+    const modal = document.getElementById("modal");
+    const fileContainer = document.createElement("div");
+    fileContainer.id = "fileContainer";
+    modal.append(fileContainer);
+    entries().then((entries) => {
+      const files = entries
+        .filter(([key, value]) => value.startsWith("g:"))
+        .map(([key, value]) => key);
+      console.log(files);
+      presentFiles(files, fileContainer);
+      const hr = document.createElement("hr");
+      modal.appendChild(hr);
+      showModalAndGetFilename("group name?", fileContainer, "name:", (groupname) => {
+        if (!groupname) {
+          return;
+        }
+        loadAllFromGroup(groupname);
+      });
+    });
+    ev.target.closest(".body-container").remove();
+  },
+  description: "Load a group of panes",
+  el: "u",
+};
+
+const loadAllFromGroup = (groupname) => {
+  let throwing;
+  return get(groupname)
+    .then((groupcontent) => {
+      console.log(groupcontent);
+      const files = groupcontent.substring(2).split("|");
+      let n = weave.bodies().length;
+      for (const filename of files) {
+        const bodyId = `b${n}`; // TODO NO, this is not good enough
+        createPanel(weave.root, bodyId, weave.buttons(weave.root), weave);
+        const body = document.getElementById(bodyId);
+        n += 1;
+        console.info(`Loading ${filename} from IndexedDB`);
+        get(filename).then((filecontent) => {
+          console.info("Loaded from IndexedDb");
+          //loadFromContent(atob(filecontent), filename, body);
+          parseIntoWrapper(decodeURIComponent(atob(filecontent)), body);
+          wireEverything(weave.buttons(weave.root));
+        });
+        //const container = body.closest(".body-container")
+
+        wireEverything(weave.buttons(weave.root));
+      }
+    })
+    .catch((err) => {
+      console.log("Loading group from IndexedDb failed", err);
+      throwing = err;
+      console.log(throwing);
+      throw err;
+    });
 };

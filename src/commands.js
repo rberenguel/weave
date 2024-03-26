@@ -1,4 +1,4 @@
-export { buttons, loadAllFromGroup };
+export { buttons };
 
 import weave from "./weave.js";
 import { createPanel, postfix, prefix } from "./doms.js";
@@ -10,7 +10,7 @@ import { parseIntoWrapper, toMarkdown } from "./parser.js";
 import { get, keys, del, set, entries } from "./libs/idb-keyval.js";
 import { enterKeyDownEvent } from "./commands_base.js";
 import { toTop } from "./doms.js";
-import { iload, iloadIntoBody } from "./loadymcloadface.js";
+import { iload, iloadIntoBody, gload } from "./loadymcloadface.js";
 import { presentFiles } from "./loadymcloadface.js";
 // Buttons
 import { div } from "./dynamicdiv.js";
@@ -121,7 +121,7 @@ const getAllThingsAsStrings = {
 
 //weave.internal.getAll = getAllThingsAsStrings
 const dbdump = {
-  text: ["dbdump"],
+  text: ["dbdump", "dumpdb"],
   action: (ev) => {
     entries().then((entries) => {
       let lines = [];
@@ -129,7 +129,7 @@ const dbdump = {
         lines.push(`- ${key}: ${value}`);
       }
       const fileBlob = new Blob([lines.join("\n")], {
-        type: "text/plain;charset=utf-8",
+        type: "application/octet-stream;charset=utf-8",
       });
       const url = URL.createObjectURL(fileBlob);
       const link = document.createElement("a");
@@ -511,7 +511,7 @@ const title = {
 };
 
 const dbload = {
-  text: ["dbload"],
+  text: ["dbload", "loaddb"],
   action: (ev) => {
     filePicker.click();
   },
@@ -521,74 +521,6 @@ const dbload = {
 
 const filePicker = document.getElementById("filePicker");
 
-const loadAllFromGroup = (groupname) => {
-  let throwing;
-  return get(groupname)
-    .then((groupcontent) => {
-      console.log(groupcontent);
-      const files = groupcontent.substring(2).split("|");
-      let n = weave.bodies().length;
-      for (const filename of files) {
-        const bodyId = `b${n}`; // TODO NO, this is not good enough
-        createPanel(weave.root, bodyId, weave.buttons(weave.root), weave);
-        const body = document.getElementById(bodyId);
-        n += 1;
-        console.info(`Loading ${filename} from IndexedDB`);
-        get(filename).then((filecontent) => {
-          console.info("Loaded from IndexedDb");
-          //loadFromContent(atob(filecontent), filename, body);
-          parseIntoWrapper(decodeURIComponent(atob(filecontent)), body);
-          wireEverything(weave.buttons(weave.root));
-        });
-        //const container = body.closest(".body-container")
-
-        wireEverything(weave.buttons(weave.root));
-      }
-    })
-    .catch((err) => {
-      console.log("Loading group from IndexedDb failed", err);
-      throwing = err;
-      console.log(throwing);
-      throw err;
-    });
-};
-
-const gload = {
-  text: ["gload"],
-  action: (ev) => {
-    // TODO list only things with pipes in the values in indexeddb
-    entries().then((entries) => {
-      for (const [key, value] of entries) {
-        if (!value.startsWith("g:")) {
-          continue;
-        }
-        const k = document.createTextNode(key);
-        const div = document.createElement("div");
-        div.classList.add("hoverable");
-        div.appendChild(k);
-        const modal = document.getElementById("modal");
-        modal.appendChild(div);
-        div.addEventListener("click", (ev) => {
-          const inp = document.querySelector("input.filename");
-          inp.value = key;
-          modal.innerHTML = "";
-          inp.dispatchEvent(enterKeyDownEvent);
-        });
-      }
-      const hr = document.createElement("hr");
-      modal.appendChild(hr);
-      showModalAndGetFilename("group name?", "name:", (groupname) => {
-        if (!groupname) {
-          return;
-        }
-        loadAllFromGroup(groupname);
-      });
-    });
-    ev.target.closest(".body-container").remove();
-  },
-  description: "Load a group of panes",
-  el: "u",
-};
 
 const idel = {
   text: ["idel"],

@@ -37,28 +37,40 @@ const divWithDraggableHandle = () => {
 };
 
 const toTop = (b) => () => {
-  Array.from(weave.containers()).forEach((b) => {
-    b.classList.remove("on-top");
-  });
-  b.classList.add("on-top");
+  const arr = Array.from(weave.containers()).map(o => parseFloat(o.style.zIndex || 0));
+  const withZ = arr.filter(z => z > 0)
+  const maxZ = Math.max(...withZ, 1);
+  const minZ = Math.min(...withZ, maxZ);
+  b.style.zIndex = maxZ + 1;
+  Array.from(weave.containers()).forEach(b => b.style.zIndex = Math.max(0, (b.style.zIndex || minZ) - minZ ))
 };
 
 const createPanel = (parentId, id, buttons, weave) => {
   const bodyContainer = document.createElement("div");
   bodyContainer.classList.add("body-container");
+  bodyContainer.classList.add("unfit");
   bodyContainer.parentId = parentId;
-
+  bodyContainer.addEventListener("keydown", ev => {
+    // This auto-fits height as we type
+    bodyContainer.classList.add("unfit")
+  })
   interact(bodyContainer).resizable({
     edges: { left: true, right: true, bottom: true, top: true },
     // TODO There is something failing in resize
     listeners: {
       move(event) {
+        const f = 1/(document.body.dataset.scale || 1)
+        const bx = document.body.dataset.x
+        const by = document.body.dataset.y
+        // TODO Uhm, strange I don't need to use these
+        // TODO use accessors also for body moves
+        bodyContainer.classList.remove("unfit") // This allows full resizability
         let target = event.target;
         toTop(target)()
         let x = manipulation.get(target, manipulation.fields.kX)
         let y = manipulation.get(target, manipulation.fields.kY)
-        manipulation.set(target, manipulation.fields.kWidth, event.rect.width)
-        manipulation.set(target, manipulation.fields.kHeight, event.rect.height)
+        manipulation.set(target, manipulation.fields.kWidth, f*event.rect.width)
+        manipulation.set(target, manipulation.fields.kHeight, f*event.rect.height)
         manipulation.resize(target)
         // translate when resizing from top or left edges
         x += event.deltaRect.left;
