@@ -82,12 +82,14 @@ const code = {
   action: (ev) => {
     const selection = window.getSelection();
     const text = selection + "";
-    if(selection.anchorNode.parentElement && selection.anchorNode.parentElement.nodeName === "PRE"){
+    if(selection.anchorNode.parentNode && selection.anchorNode.parentNode.nodeName === "PRE"){
       const parent = selection.anchorNode.parentNode
       const div = document.createElement("div")
+      const granny = parent.parentNode
       div.innerText = text
-      console.log(parent)
-      parent.closest(".body").insertBefore(parent, div)
+      console.log("Granny")
+      console.log(granny)
+      granny.insertBefore(div,parent.nextSibling)
       parent.remove()
     } else {
       const pre = document.createElement("pre");
